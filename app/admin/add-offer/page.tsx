@@ -60,6 +60,7 @@ const categories = [
 // Define form steps
 const formSteps = [
   { id: "basic", title: "Basic Information", description: "Enter general information about the study offer" },
+  { id: "programs", title: "Programs & Tags", description: "Add available programs and relevant tags" },
   { id: "financial", title: "Financial Details", description: "Define tuition fees and scholarship options" },
   { id: "requirements", title: "Requirements", description: "Specify language and admission requirements" },
   { id: "facilities", title: "Facilities & Appearance", description: "Add campus facilities and customize appearance" },
@@ -148,8 +149,6 @@ export default function AdminAddOfferPage() {
       if (!title.trim()) newErrors.title = ["Title is required"];
       if (!description.trim()) newErrors.description = ["Description is required"];
       if (!location.trim()) newErrors.location = ["Location is required"];
-      if (programs.length === 0) newErrors.programs = ["At least one program is required"];
-      if (tags.length === 0) newErrors.tags = ["At least one tag is required"];
       
       // Validate university name only if source is not "agent"
       if (source !== "agent" && !universityName.trim()) {
@@ -166,16 +165,22 @@ export default function AdminAddOfferPage() {
       }
     }
     
-    // Step 2: Financial Details
+    // Step 2: Programs & Tags
     else if (currentStep === 1) {
+      if (programs.length === 0) newErrors.programs = ["At least one program is required"];
+      if (tags.length === 0) newErrors.tags = ["At least one tag is required"];
+    }
+    
+    // Step 3: Financial Details
+    else if (currentStep === 2) {
       if (tuitionAmount <= 0) newErrors.tuitionAmount = ["Please enter a valid tuition amount"];
       if (scholarshipAvailable && !scholarshipDetails.trim()) {
         newErrors.scholarshipDetails = ["Please provide scholarship details"];
       }
     }
     
-    // Step 3: Requirements
-    else if (currentStep === 2) {
+    // Step 4: Requirements
+    else if (currentStep === 3) {
       if (languageRequirements.length === 0) {
         newErrors.languageRequirements = ["Please add at least one language requirement"];
       }
@@ -185,8 +190,8 @@ export default function AdminAddOfferPage() {
       }
     }
     
-    // Step 4: Facilities & Appearance
-    else if (currentStep === 3) {
+    // Step 5: Facilities & Appearance
+    else if (currentStep === 4) {
       // Optional
     }
     
@@ -355,8 +360,13 @@ export default function AdminAddOfferPage() {
             {errors.location && <p className="text-sm text-destructive mt-1">{errors.location}</p>}
             {errors.agentId && <p className="text-sm text-destructive mt-1">{errors.agentId}</p>}
             {errors.universityDirectId && <p className="text-sm text-destructive mt-1">{errors.universityDirectId}</p>}
-            
-            <div className="space-y-4 md:col-span-2 mt-6">
+          </>
+        );
+      
+      case 1: // Programs & Tags
+        return (
+          <>
+            <div className="space-y-4 md:col-span-2">
               <h3 className="text-lg font-medium">Available Programs</h3>
               <TagInput 
                 items={programs}
@@ -381,7 +391,7 @@ export default function AdminAddOfferPage() {
           </>
         );
       
-      case 1: // Financial Details
+      case 2: // Financial Details
         return (
           <>
             <TuitionSection 
@@ -409,7 +419,7 @@ export default function AdminAddOfferPage() {
           </>
         );
       
-      case 2: // Requirements
+      case 3: // Requirements
         return (
           <>
             <LanguageRequirementsSection 
@@ -430,7 +440,7 @@ export default function AdminAddOfferPage() {
           </>
         );
       
-      case 3: // Facilities & Appearance
+      case 4: // Facilities & Appearance
         return (
           <>
             <div className="space-y-4 md:col-span-2">
@@ -452,7 +462,7 @@ export default function AdminAddOfferPage() {
           </>
         );
       
-      case 4: // Review & Submit
+      case 5: // Review & Submit
         return (
           <div className="space-y-6">
             <div className="border rounded-md p-4">
@@ -478,6 +488,12 @@ export default function AdminAddOfferPage() {
                   <dt className="font-medium text-muted-foreground">Duration:</dt>
                   <dd className="col-span-2">{durationInYears} years</dd>
                 </div>
+              </dl>
+            </div>
+            
+            <div className="border rounded-md p-4">
+              <h3 className="text-lg font-medium mb-3">Programs & Tags</h3>
+              <dl className="space-y-2">
                 <div className="grid grid-cols-1 md:grid-cols-3 py-2">
                   <dt className="font-medium text-muted-foreground">Programs:</dt>
                   <dd className="col-span-2">{programs.join(", ")}</dd>
