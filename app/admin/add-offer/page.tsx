@@ -10,6 +10,7 @@ import { Toaster } from "@/components/ui/toaster";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { redirect } from "next/navigation";
+import { TagInputSelector } from "@/components/TagInputSelector";
 
 // Import form components from the original add-offer page
 import {
@@ -318,11 +319,12 @@ export default function AdminAddOfferPage() {
                 {/* Tags */}
                 <div className="space-y-4 md:col-span-2">
                   <h3 className="text-lg font-medium">Tags</h3>
-                  <TagInput 
+                  <TagInputSelector 
                     items={tags}
                     setItems={setTags}
                     placeholder="E.g., scholarship, engineering, medicine"
                     badgeVariant="outline"
+                    allowCustomTags={true}
                   />
                 </div>
                 
