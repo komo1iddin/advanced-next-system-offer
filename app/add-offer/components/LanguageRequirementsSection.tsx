@@ -49,81 +49,88 @@ export function LanguageRequirementsSection({
 
   return (
     <FormSection title="Language Requirements">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="space-y-2">
-          <label htmlFor="language" className="text-sm font-medium">
-            Language <span className="text-destructive">*</span>
-          </label>
-          <Select value={currentLanguage} onValueChange={setCurrentLanguage}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select language" />
-            </SelectTrigger>
-            <SelectContent>
-              {languages.map((lang) => (
-                <SelectItem key={lang} value={lang}>
-                  {lang}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        
-        <div className="space-y-2">
-          <label htmlFor="testName" className="text-sm font-medium">
-            Test Name
-          </label>
-          <Input
-            id="testName"
-            value={currentTestName}
-            onChange={(e) => setCurrentTestName(e.target.value)}
-            placeholder="E.g., TOEFL, IELTS, HSK"
-          />
-        </div>
-        
-        <div className="space-y-2">
-          <label htmlFor="minimumScore" className="text-sm font-medium">
-            Minimum Score
-          </label>
-          <div className="flex gap-2">
+      <div className="mb-6">
+        <h4 className="text-sm font-medium mb-3">Add a new language requirement:</h4>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label htmlFor="language" className="text-sm font-medium mb-2 block">
+              Language <span className="text-destructive">*</span>
+            </label>
+            <Select value={currentLanguage} onValueChange={setCurrentLanguage}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select language" />
+              </SelectTrigger>
+              <SelectContent>
+                {languages.map((lang) => (
+                  <SelectItem key={lang} value={lang}>
+                    {lang}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div>
+            <label htmlFor="testName" className="text-sm font-medium mb-2 block">
+              Test Name
+            </label>
             <Input
-              id="minimumScore"
-              value={currentMinimumScore}
-              onChange={(e) => setCurrentMinimumScore(e.target.value)}
-              placeholder="E.g., 90, 6.5, HSK 4"
-              className="flex-1"
+              id="testName"
+              value={currentTestName}
+              onChange={(e) => setCurrentTestName(e.target.value)}
+              placeholder="E.g., TOEFL, IELTS, HSK"
             />
-            <Button type="button" onClick={addLanguageRequirement}>
-              Add
-            </Button>
+          </div>
+          
+          <div>
+            <label htmlFor="minimumScore" className="text-sm font-medium mb-2 block">
+              Minimum Score
+            </label>
+            <div className="flex gap-2">
+              <Input
+                id="minimumScore"
+                value={currentMinimumScore}
+                onChange={(e) => setCurrentMinimumScore(e.target.value)}
+                placeholder="E.g., 90, 6.5, HSK 4"
+                className="flex-1"
+              />
+              <Button type="button" onClick={addLanguageRequirement}>
+                Add
+              </Button>
+            </div>
           </div>
         </div>
       </div>
       
-      <div className="space-y-2 mt-2">
-        {languageRequirements.map((req, index) => (
-          <div key={index} className="flex items-center justify-between p-2 border rounded-md">
-            <div>
-              <span className="font-medium">{req.language}</span>
-              {req.testName && req.minimumScore && (
-                <span> - {req.testName} ({req.minimumScore})</span>
-              )}
-              {req.testName && !req.minimumScore && <span> - {req.testName}</span>}
-              {!req.testName && req.minimumScore && <span> - {req.minimumScore}</span>}
-            </div>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => removeLanguageRequirement(index)}
-            >
-              <X className="h-4 w-4" />
-            </Button>
+      {languageRequirements.length > 0 && (
+        <div>
+          <h4 className="text-sm font-medium mb-3">Added Requirements:</h4>
+          
+          <div className="grid grid-cols-3 gap-4 mb-2">
+            <div className="text-sm text-muted-foreground">Language</div>
+            <div className="text-sm text-muted-foreground">Test Name</div>
+            <div className="text-sm text-muted-foreground">Minimum Score</div>
           </div>
-        ))}
-        {languageRequirements.length === 0 && (
-          <p className="text-sm text-muted-foreground">No language requirements added yet</p>
-        )}
-      </div>
+          
+          {languageRequirements.map((req, index) => (
+            <div key={index} className="grid grid-cols-3 gap-4 py-3 border-b last:border-b-0">
+              <div className="font-medium">{req.language}</div>
+              <div>{req.testName || "—"}</div>
+              <div className="flex justify-between items-center">
+                <span>{req.minimumScore || "—"}</span>
+                <button
+                  type="button"
+                  onClick={() => removeLanguageRequirement(index)}
+                  className="text-muted-foreground hover:text-foreground"
+                  aria-label="Remove"
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </FormSection>
   );
 } 

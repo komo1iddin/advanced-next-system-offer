@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -38,36 +37,42 @@ export function TagInput({
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex gap-2">
-        <Input
-          value={currentItem}
-          onChange={(e) => setCurrentItem(e.target.value)}
-          placeholder={placeholder}
-          onKeyDown={handleKeyDown}
-        />
-        <Button type="button" onClick={addItem}>
-          Add
-        </Button>
+    <div className="space-y-6">
+      <div>
+        <h4 className="text-sm font-medium mb-3">Add a new item:</h4>
+        <div className="flex gap-2">
+          <Input
+            value={currentItem}
+            onChange={(e) => setCurrentItem(e.target.value)}
+            placeholder={placeholder}
+            onKeyDown={handleKeyDown}
+          />
+          <Button type="button" onClick={addItem}>
+            Add
+          </Button>
+        </div>
       </div>
       
-      <div className="flex flex-wrap gap-2">
-        {items.map((item) => (
-          <Badge key={item} variant={badgeVariant} className="flex items-center gap-1">
-            {item}
-            <button
-              type="button"
-              onClick={() => removeItem(item)}
-              className="ml-1 rounded-full hover:bg-muted w-4 h-4 inline-flex items-center justify-center"
-            >
-              <X className="h-3 w-3" />
-            </button>
-          </Badge>
-        ))}
-        {items.length === 0 && (
-          <p className="text-sm text-muted-foreground">No items added yet</p>
-        )}
-      </div>
+      {items.length > 0 && (
+        <div>
+          <h4 className="text-sm font-medium mb-3">Added Items:</h4>
+          <div className="flex flex-wrap gap-2">
+            {items.map((item) => (
+              <Badge key={item} variant={badgeVariant} className="flex items-center gap-1">
+                {item}
+                <button
+                  type="button"
+                  onClick={() => removeItem(item)}
+                  className="ml-1 text-muted-foreground hover:text-foreground"
+                  aria-label="Remove"
+                >
+                  ×
+                </button>
+              </Badge>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 } 

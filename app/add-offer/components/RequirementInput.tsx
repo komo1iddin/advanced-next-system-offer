@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
@@ -31,37 +30,42 @@ export function RequirementInput({ items, setItems, placeholder }: RequirementIn
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex gap-2">
-        <Input
-          value={currentItem}
-          onChange={(e) => setCurrentItem(e.target.value)}
-          placeholder={placeholder}
-          onKeyDown={handleKeyDown}
-        />
-        <Button type="button" onClick={addItem}>
-          Add
-        </Button>
+    <div className="space-y-6">
+      <div>
+        <h4 className="text-sm font-medium mb-3">Add a new requirement:</h4>
+        <div className="flex gap-2">
+          <Input
+            value={currentItem}
+            onChange={(e) => setCurrentItem(e.target.value)}
+            placeholder={placeholder}
+            onKeyDown={handleKeyDown}
+          />
+          <Button type="button" onClick={addItem}>
+            Add
+          </Button>
+        </div>
       </div>
       
-      <div className="space-y-2">
-        {items.map((item, index) => (
-          <div key={index} className="flex items-center justify-between p-2 border rounded-md">
-            <div>{item}</div>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => removeItem(item)}
-            >
-              <X className="h-4 w-4" />
-            </Button>
+      {items.length > 0 && (
+        <div>
+          <h4 className="text-sm font-medium mb-3">Added Requirements:</h4>
+          <div>
+            {items.map((item, index) => (
+              <div key={index} className="flex items-center justify-between py-3 border-b last:border-b-0">
+                <div className="font-medium">{item}</div>
+                <button
+                  type="button"
+                  onClick={() => removeItem(item)}
+                  className="text-muted-foreground hover:text-foreground"
+                  aria-label="Remove"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
           </div>
-        ))}
-        {items.length === 0 && (
-          <p className="text-sm text-muted-foreground">No items added yet</p>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 } 
