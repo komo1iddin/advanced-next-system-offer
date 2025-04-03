@@ -61,9 +61,11 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // Debug user role
+    // Verbose debug of the user object to understand what fields are available
+    console.log("POST /api/tags - Full user object:", JSON.stringify(session.user, null, 2));
     console.log("POST /api/tags - User role:", session.user.role);
     
+    // Check if user has admin role
     if (session.user.role !== "admin") {
       console.log("POST /api/tags - Not admin role:", session.user.role);
       return NextResponse.json(
