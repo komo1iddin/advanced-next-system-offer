@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useCallback, useState } from "react";
+import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import AdminNav from "@/components/AdminNav";
 
 // Import custom hook and components
 import { useLocationsQuery } from "./hooks/useLocationsQuery";
@@ -13,7 +13,6 @@ import LocationDialogs from "./components/LocationDialogs";
 
 export default function LocationsPage() {
   const router = useRouter();
-  const { data: session, status } = useSession();
 
   // Use our React Query hook for managing locations
   const { 
@@ -44,26 +43,6 @@ export default function LocationsPage() {
   const [selectedProvince, setSelectedProvince] = useState<any>(null);
   const [selectedCity, setSelectedCity] = useState<any>(null);
 
-  // Memoize the check admin status callback
-  const checkAdminStatus = useCallback(() => {
-    if (status === "loading") return;
-    
-    if (status === "unauthenticated") {
-      router.push("/auth/signin?callbackUrl=/admin/locations");
-      return;
-    }
-    
-    if (session?.user?.role !== "admin") {
-      router.push("/");
-      return;
-    }
-  }, [status, session, router]);
-
-  // Check admin status on component mount
-  useEffect(() => {
-    checkAdminStatus();
-  }, [checkAdminStatus]);
-
   // Handle edit operations
   const handleEditProvince = useCallback((province: any) => {
     setSelectedProvince(province);
@@ -89,28 +68,28 @@ export default function LocationsPage() {
   }, [deleteCity]);
 
   // Handle update operations
-  const handleUpdateProvince = useCallback((data: { name: string; active: boolean }) => {
+  const handleUpdateProvince = useCallback(async (data: { name: string; active: boolean }) => {
     if (!selectedProvince) return;
-    updateProvince(selectedProvince._id, data);
+    await updateProvince(selectedProvince._id, data);
     setIsEditProvinceDialogOpen(false);
     setSelectedProvince(null);
   }, [selectedProvince, updateProvince]);
 
-  const handleUpdateCity = useCallback((data: { name: string; provinceId: string; active: boolean }) => {
+  const handleUpdateCity = useCallback(async (data: { name: string; provinceId: string; active: boolean }) => {
     if (!selectedCity) return;
-    updateCity(selectedCity._id, data);
+    await updateCity(selectedCity._id, data);
     setIsEditCityDialogOpen(false);
     setSelectedCity(null);
   }, [selectedCity, updateCity]);
 
   // Handle add operations
-  const handleAddProvince = useCallback((data: { name: string; active: boolean }) => {
-    addProvince(data);
+  const handleAddProvince = useCallback(async (data: { name: string; active: boolean }) => {
+    await addProvince(data);
     setIsAddProvinceDialogOpen(false);
   }, [addProvince]);
 
-  const handleAddCity = useCallback((data: { name: string; provinceId: string; active: boolean }) => {
-    addCity(data);
+  const handleAddCity = useCallback(async (data: { name: string; provinceId: string; active: boolean }) => {
+    await addCity(data);
     setIsAddCityDialogOpen(false);
   }, [addCity]);
 
@@ -144,63 +123,90 @@ export default function LocationsPage() {
     }
   };
 
-  // Loading state
-  if (status === "loading") {
+  if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      <div className="container mx-auto py-8 px-4 text-center">
+        <p>Loading locations...</p>
       </div>
     );
   }
   
-  // If not authenticated or not admin, don't render anything (router will redirect)
-  if (status === "unauthenticated" || session?.user?.role !== "admin") {
-    return null;
-  }
-
-  return (
-    <div className="flex min-h-screen flex-col">
-      <AdminNav />
-      
-      <div className="container py-6 space-y-6">
-        <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold">Location Management</h1>
-          
-          {/* All dialogs are contained in this component */}
-          <LocationDialogs
-            provinces={provinces}
-            dialogs={dialogControls}
-            onAddProvince={handleAddProvince}
-            onUpdateProvince={handleUpdateProvince}
-            onAddCity={handleAddCity}
-            onUpdateCity={handleUpdateCity}
-          />
+  if (isError) {
+    return (
+      <div className="container mx-auto py-8 px-4">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold mb-2">Manage Locations</h1>
+          <div className="flex items-center">
+            <Link href="/admin" className="text-sm text-muted-foreground hover:text-foreground flex items-center">
+              <ArrowLeft className="mr-1 h-4 w-4" />
+              Back to Dashboard
+            </Link>
+          </div>
         </div>
         
-        {/* Locations Table */}
         <Card>
           <CardHeader>
-            <CardTitle>Locations</CardTitle>
-            <CardDescription>
-              Manage provinces/states and cities in your application
-            </CardDescription>
+            <CardTitle className="text-destructive">Error</CardTitle>
           </CardHeader>
           <CardContent>
-            <LocationsTable
-              locations={locations}
-              isLoading={isLoading}
-              loadError={isError ? String(error) : null}
-              retryLoad={refetch}
-              onEditProvince={handleEditProvince}
-              onEditCity={handleEditCity}
-              onDeleteProvince={handleDeleteProvince}
-              onDeleteCity={handleDeleteCity}
-              provinces={provinces}
-              cities={cities}
-            />
+            <p>{error instanceof Error ? error.message : "Failed to load locations"}</p>
           </CardContent>
         </Card>
       </div>
+    );
+  }
+
+  return (
+    <div className="container mx-auto py-8 px-4">
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold mb-2">Manage Locations</h1>
+        <div className="flex items-center">
+          <Link href="/admin" className="text-sm text-muted-foreground hover:text-foreground flex items-center">
+            <ArrowLeft className="mr-1 h-4 w-4" />
+            Back to Dashboard
+          </Link>
+        </div>
+      </div>
+      
+      <div className="flex justify-between items-center mb-6">
+        <p className="text-muted-foreground">
+          Manage provinces/states and cities in your application
+        </p>
+        
+        {/* All dialogs are contained in this component */}
+        <LocationDialogs
+          provinces={provinces}
+          dialogs={dialogControls}
+          onAddProvince={handleAddProvince}
+          onUpdateProvince={handleUpdateProvince}
+          onAddCity={handleAddCity}
+          onUpdateCity={handleUpdateCity}
+        />
+      </div>
+      
+      {/* Locations Table */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Locations</CardTitle>
+          <CardDescription>
+            Manage provinces/states and cities in your application
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <LocationsTable
+            locations={locations}
+            isLoading={isLoading}
+            loadError={isError ? String(error) : null}
+            retryLoad={refetch}
+            onEditProvince={handleEditProvince}
+            onEditCity={handleEditCity}
+            onDeleteProvince={handleDeleteProvince}
+            onDeleteCity={handleDeleteCity}
+            provinces={provinces}
+            cities={cities}
+          />
+        </CardContent>
+      </Card>
     </div>
   );
 } 

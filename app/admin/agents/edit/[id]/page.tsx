@@ -2,8 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
-import { redirect } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -32,16 +30,6 @@ interface EditAgentPageProps {
 export default function EditAgentPage({ params }: EditAgentPageProps) {
   const agentId = params.id;
   const router = useRouter();
-  const { data: session, status } = useSession();
-
-  // Check if user is admin on client side
-  if (status === "authenticated" && session?.user?.role !== "admin") {
-    redirect("/");
-  }
-
-  if (status === "unauthenticated") {
-    redirect(`/auth/signin?callbackUrl=/admin/agents/edit/${agentId}`);
-  }
 
   // Agent state
   const [name, setName] = useState("");
@@ -132,6 +120,16 @@ export default function EditAgentPage({ params }: EditAgentPageProps) {
   if (isError) {
     return (
       <div className="container mx-auto py-8 px-4">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold mb-2">Edit Agent</h1>
+          <div className="flex items-center">
+            <Link href="/admin/agents" className="text-sm text-muted-foreground hover:text-foreground flex items-center">
+              <ArrowLeft className="mr-1 h-4 w-4" />
+              Back to Agents
+            </Link>
+          </div>
+        </div>
+        
         <Card>
           <CardHeader>
             <CardTitle className="text-destructive">Error</CardTitle>
@@ -151,10 +149,15 @@ export default function EditAgentPage({ params }: EditAgentPageProps) {
 
   return (
     <div className="container mx-auto py-8 px-4">
-      <Link href="/admin/agents" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground w-fit mb-6">
-        <ArrowLeft className="mr-1 h-4 w-4" />
-        Back to Agents
-      </Link>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold mb-2">Edit Agent</h1>
+        <div className="flex items-center">
+          <Link href="/admin/agents" className="text-sm text-muted-foreground hover:text-foreground flex items-center">
+            <ArrowLeft className="mr-1 h-4 w-4" />
+            Back to Agents
+          </Link>
+        </div>
+      </div>
       
       <Card>
         <form onSubmit={handleSubmit}>

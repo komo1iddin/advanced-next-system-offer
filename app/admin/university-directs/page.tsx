@@ -2,8 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
-import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -47,17 +45,6 @@ import { useUniversityDirectsQuery, UniversityDirect } from "./hooks/useUniversi
 
 export default function UniversityDirectsPage() {
   const router = useRouter();
-  const { data: session, status } = useSession();
-
-  // Check if user is admin on client side
-  if (status === "authenticated" && session?.user?.role !== "admin") {
-    redirect("/");
-  }
-
-  if (status === "unauthenticated") {
-    redirect("/auth/signin?callbackUrl=/admin/university-directs");
-  }
-
   const [universityDirectToDelete, setUniversityDirectToDelete] = useState<string | null>(null);
   
   // Use React Query hook
@@ -116,10 +103,10 @@ export default function UniversityDirectsPage() {
     }
   };
 
-  if (status === "loading") {
+  if (isLoading) {
     return (
       <div className="container mx-auto py-8 px-4 text-center">
-        <p>Loading...</p>
+        <p>Loading university directs...</p>
       </div>
     );
   }
@@ -154,11 +141,7 @@ export default function UniversityDirectsPage() {
       {/* Improved header with better alignment and spacing */}
       <div className="mb-6 flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
         <div className="flex flex-col space-y-1">
-          <Link href="/admin" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground w-fit mb-1">
-            <ArrowLeft className="mr-1 h-4 w-4" />
-            Back to Dashboard
-          </Link>
-          <h1 className="text-2xl font-bold">Manage University Directs</h1>
+          <h1 className="text-2xl font-bold">University Directs</h1>
           <p className="text-muted-foreground text-sm">
             View and manage your direct university contacts and their information.
           </p>

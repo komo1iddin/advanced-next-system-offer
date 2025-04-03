@@ -1,48 +1,13 @@
-import { requireAdmin } from "@/lib/auth-utils";
-import { redirect } from "next/navigation";
-import { Metadata } from "next";
+"use client";
+
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 import { Layout, LayoutGrid, PlusCircle, Settings, Shield, Building2, UserPlus, Users, MapPin, Globe, Tag } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { getServerSession } from "next-auth/next";
 
-export const metadata: Metadata = {
-  title: "Admin Dashboard | StudyBridge",
-  description: "Admin dashboard for managing StudyBridge platform",
-};
-
-export default async function AdminDashboardPage() {
-  // Get the session to check if the user is authenticated
-  const session = await getServerSession();
+export default function AdminDashboardPage() {
+  const { data: session } = useSession();
   
-  // *** DEBUGGING START ***
-  console.log("[/admin/page.tsx] Attempting to access admin dashboard...");
-  if (session && session.user) {
-    console.log("[/admin/page.tsx] Session found:", {
-      userId: session.user.id,
-      userName: session.user.name,
-      userEmail: session.user.email,
-      userRole: session.user.role
-    });
-  } else {
-    console.log("[/admin/page.tsx] No session found or session.user is missing.");
-  }
-  // *** DEBUGGING END ***
-  
-  // Check if the user is authenticated
-  // if (!session || !session.user) {
-  //   console.log("[/admin/page.tsx] Redirecting: Not authenticated.");
-  //   redirect("/auth/signin?callbackUrl=/admin&error=NotAuthenticated");
-  // }
-  
-  // Check if the user has the admin role
-  // if (session.user.role !== "admin") {
-  //   console.log(`[/admin/page.tsx] Redirecting: Role is \'${session.user.role}\', not \'admin\'.`);
-  //   // Redirect to the set-admin page with error message
-  //   redirect(`/set-admin?error=NotAdmin&role=${session.user.role}`);
-  // }
-  
-  console.log("[/admin/page.tsx] Access granted. Rendering admin dashboard.");
   return (
     <div className="container mx-auto py-10">
       <div className="flex flex-col gap-6">

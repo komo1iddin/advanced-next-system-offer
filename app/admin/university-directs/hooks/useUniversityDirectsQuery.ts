@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { toast } from "@/components/ui/use-toast";
 
 export interface UniversityDirect {
@@ -81,7 +81,6 @@ export const deleteUniversityDirect = async (id: string): Promise<void> => {
 export const useUniversityDirectsQuery = () => {
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [filteredUniversityDirects, setFilteredUniversityDirects] = useState<UniversityDirect[]>([]);
   
   // Fetch all university directs
   const { 
@@ -96,24 +95,22 @@ export const useUniversityDirectsQuery = () => {
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
   
-  // Filter university directs based on search query
-  useEffect(() => {
-    if (!universityDirects) {
-      setFilteredUniversityDirects([]);
-      return;
+  // Use useMemo instead of useState + useEffect to filter university directs
+  const filteredUniversityDirects = useMemo(() => {
+    if (!universityDirects.length) {
+      return [];
     }
     
     if (searchQuery.trim() === "") {
-      setFilteredUniversityDirects(universityDirects);
-    } else {
-      const filtered = universityDirects.filter(
-        (universityDirect) =>
-          universityDirect.universityName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          (universityDirect.departmentName && universityDirect.departmentName.toLowerCase().includes(searchQuery.toLowerCase())) ||
-          (universityDirect.contactPersonName && universityDirect.contactPersonName.toLowerCase().includes(searchQuery.toLowerCase()))
-      );
-      setFilteredUniversityDirects(filtered);
+      return universityDirects;
     }
+    
+    return universityDirects.filter(
+      (universityDirect) =>
+        universityDirect.universityName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (universityDirect.departmentName && universityDirect.departmentName.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (universityDirect.contactPersonName && universityDirect.contactPersonName.toLowerCase().includes(searchQuery.toLowerCase()))
+    );
   }, [searchQuery, universityDirects]);
   
   // Toggle university direct active status mutation

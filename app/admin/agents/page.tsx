@@ -1,9 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
-import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -49,17 +47,6 @@ import { useAgentsQuery, Agent } from "./hooks/useAgentsQuery";
 
 export default function AgentsPage() {
   const router = useRouter();
-  const { data: session, status } = useSession();
-
-  // Check if user is admin on client side
-  if (status === "authenticated" && session?.user?.role !== "admin") {
-    redirect("/");
-  }
-
-  if (status === "unauthenticated") {
-    redirect("/auth/signin?callbackUrl=/admin/agents");
-  }
-
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [agentToDelete, setAgentToDelete] = useState<string | null>(null);
   

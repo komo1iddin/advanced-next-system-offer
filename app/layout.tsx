@@ -3,8 +3,8 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import AuthProvider from "@/components/auth-provider";
-import { Navbar } from "@/components/navbar";
 import { ReactQueryProvider } from "./providers";
+import { NavbarWrapper } from "./components/NavbarWrapper";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -29,10 +29,9 @@ export default function RootLayout({
               enableSystem
               disableTransitionOnChange
             >
-              <div className="min-h-screen flex flex-col">
-                <Navbar />
-                <main className="flex-1">{children}</main>
-              </div>
+              <NavbarWrapper>
+                {children}
+              </NavbarWrapper>
             </ThemeProvider>
           </ReactQueryProvider>
         </AuthProvider>

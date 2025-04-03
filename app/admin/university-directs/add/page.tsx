@@ -2,8 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
-import { redirect } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -25,16 +23,6 @@ import { useCreateUniversityDirectMutation } from "../hooks/useCreateUniversityD
 
 export default function AddUniversityDirectPage() {
   const router = useRouter();
-  const { data: session, status } = useSession();
-
-  // Check if user is admin on client side
-  if (status === "authenticated" && session?.user?.role !== "admin") {
-    redirect("/");
-  }
-
-  if (status === "unauthenticated") {
-    redirect("/auth/signin?callbackUrl=/admin/university-directs/add");
-  }
 
   // University Direct state
   const [universityName, setUniversityName] = useState("");
@@ -79,20 +67,17 @@ export default function AddUniversityDirectPage() {
     createUniversityDirect(universityDirectData);
   };
 
-  if (status === "loading") {
-    return (
-      <div className="container mx-auto py-8 px-4 text-center">
-        <p>Loading...</p>
-      </div>
-    );
-  }
-
   return (
     <div className="container mx-auto py-8 px-4">
-      <Link href="/admin/university-directs" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground w-fit mb-6">
-        <ArrowLeft className="mr-1 h-4 w-4" />
-        Back to University Directs
-      </Link>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold mb-2">Add University Direct</h1>
+        <div className="flex items-center">
+          <Link href="/admin/university-directs" className="text-sm text-muted-foreground hover:text-foreground flex items-center">
+            <ArrowLeft className="mr-1 h-4 w-4" />
+            Back to University Directs
+          </Link>
+        </div>
+      </div>
       
       <Card>
         <form onSubmit={handleSubmit}>
