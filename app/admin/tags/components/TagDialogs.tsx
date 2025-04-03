@@ -37,15 +37,9 @@ export default function TagDialogs({
   onUpdateTag 
 }: TagDialogsProps) {
   return (
-    <div className="flex gap-2">
+    <>
       {/* Add Tag Dialog */}
       <Dialog open={dialogs.add.isOpen} onOpenChange={dialogs.add.setOpen}>
-        <DialogTrigger asChild>
-          <Button>
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Add Tag
-          </Button>
-        </DialogTrigger>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Add New Tag</DialogTitle>
@@ -80,6 +74,6 @@ export default function TagDialogs({
           )}
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   );
 } 

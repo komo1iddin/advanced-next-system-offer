@@ -3,8 +3,11 @@
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, MapPin, PlusCircle, Search } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Toaster } from "@/components/ui/toaster";
 
 // Import custom hook and components
 import { useLocationsQuery } from "./hooks/useLocationsQuery";
@@ -42,6 +45,7 @@ export default function LocationsPage() {
   const [isEditCityDialogOpen, setIsEditCityDialogOpen] = useState(false);
   const [selectedProvince, setSelectedProvince] = useState<any>(null);
   const [selectedCity, setSelectedCity] = useState<any>(null);
+  const [searchTerm, setSearchTerm] = useState("");
 
   // Handle edit operations
   const handleEditProvince = useCallback((province: any) => {
@@ -93,6 +97,13 @@ export default function LocationsPage() {
     setIsAddCityDialogOpen(false);
   }, [addCity]);
 
+  // Filter locations based on search term
+  const filteredLocations = locations.filter(location => {
+    return searchTerm === "" || 
+      location.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (location.provinceName && location.provinceName.toLowerCase().includes(searchTerm.toLowerCase()));
+  });
+
   // Dialog controls for compatibility with existing components
   const dialogControls = {
     province: {
@@ -126,7 +137,8 @@ export default function LocationsPage() {
   if (isLoading) {
     return (
       <div className="container mx-auto py-8 px-4 text-center">
-        <p>Loading locations...</p>
+        <div className="animate-spin mx-auto w-8 h-8 border-2 border-primary border-t-transparent rounded-full"></div>
+        <p className="mt-2 text-sm text-muted-foreground">Loading locations...</p>
       </div>
     );
   }
@@ -134,13 +146,13 @@ export default function LocationsPage() {
   if (isError) {
     return (
       <div className="container mx-auto py-8 px-4">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold mb-2">Manage Locations</h1>
-          <div className="flex items-center">
-            <Link href="/admin" className="text-sm text-muted-foreground hover:text-foreground flex items-center">
+        <div className="mb-6 flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+          <div className="flex flex-col space-y-1">
+            <Link href="/admin" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground w-fit mb-1">
               <ArrowLeft className="mr-1 h-4 w-4" />
               Back to Dashboard
             </Link>
+            <h1 className="text-2xl font-bold">Locations</h1>
           </div>
         </div>
         
@@ -158,55 +170,87 @@ export default function LocationsPage() {
 
   return (
     <div className="container mx-auto py-8 px-4">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold mb-2">Manage Locations</h1>
-        <div className="flex items-center">
-          <Link href="/admin" className="text-sm text-muted-foreground hover:text-foreground flex items-center">
+      {/* Header with title and add button */}
+      <div className="mb-6 flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+        <div className="flex flex-col space-y-1">
+          <Link href="/admin" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground w-fit mb-1">
             <ArrowLeft className="mr-1 h-4 w-4" />
             Back to Dashboard
           </Link>
+          <h1 className="text-2xl font-bold">Locations</h1>
+          <p className="text-muted-foreground text-sm">
+            Manage provinces/states and cities in your application
+          </p>
+        </div>
+        <div className="flex flex-col sm:flex-row gap-2">
+          <Button onClick={() => setIsAddProvinceDialogOpen(true)} variant="default" className="w-full sm:w-auto">
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Add Province
+          </Button>
+          <Button onClick={() => setIsAddCityDialogOpen(true)} variant="default" className="w-full sm:w-auto">
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Add City
+          </Button>
         </div>
       </div>
       
-      <div className="flex justify-between items-center mb-6">
-        <p className="text-muted-foreground">
-          Manage provinces/states and cities in your application
-        </p>
-        
-        {/* All dialogs are contained in this component */}
-        <LocationDialogs
-          provinces={provinces}
-          dialogs={dialogControls}
-          onAddProvince={handleAddProvince}
-          onUpdateProvince={handleUpdateProvince}
-          onAddCity={handleAddCity}
-          onUpdateCity={handleUpdateCity}
-        />
-      </div>
+      {/* All dialogs are contained in this component */}
+      <LocationDialogs
+        provinces={provinces}
+        dialogs={dialogControls}
+        onAddProvince={handleAddProvince}
+        onUpdateProvince={handleUpdateProvince}
+        onAddCity={handleAddCity}
+        onUpdateCity={handleUpdateCity}
+      />
       
       {/* Locations Table */}
       <Card>
-        <CardHeader>
-          <CardTitle>Locations</CardTitle>
-          <CardDescription>
-            Manage provinces/states and cities in your application
-          </CardDescription>
+        <CardHeader className="pb-3 flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+          <div>
+            <CardTitle>All Locations</CardTitle>
+            <CardDescription>
+              {filteredLocations.length} location{filteredLocations.length !== 1 ? 's' : ''} available
+            </CardDescription>
+          </div>
+          <div className="relative w-full sm:w-64">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search locations..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-8"
+            />
+          </div>
         </CardHeader>
         <CardContent>
-          <LocationsTable
-            locations={locations}
-            isLoading={isLoading}
-            loadError={isError ? String(error) : null}
-            retryLoad={refetch}
-            onEditProvince={handleEditProvince}
-            onEditCity={handleEditCity}
-            onDeleteProvince={handleDeleteProvince}
-            onDeleteCity={handleDeleteCity}
-            provinces={provinces}
-            cities={cities}
-          />
+          {filteredLocations.length === 0 ? (
+            <div className="text-center py-8">
+              <MapPin className="mx-auto h-12 w-12 text-muted-foreground/50" />
+              <p className="mt-2 text-muted-foreground">
+                {searchTerm ? "No locations match your search criteria" : "No locations found. Add a province and city to get started!"}
+              </p>
+            </div>
+          ) : (
+            <div className="rounded-md border">
+              <LocationsTable
+                locations={filteredLocations}
+                isLoading={isLoading}
+                loadError={isError ? String(error) : null}
+                retryLoad={refetch}
+                onEditProvince={handleEditProvince}
+                onEditCity={handleEditCity}
+                onDeleteProvince={handleDeleteProvince}
+                onDeleteCity={handleDeleteCity}
+                provinces={provinces}
+                cities={cities}
+              />
+            </div>
+          )}
         </CardContent>
       </Card>
+      
+      <Toaster />
     </div>
   );
 } 

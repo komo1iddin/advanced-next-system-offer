@@ -46,21 +46,12 @@ export default function LocationDialogs({
   onUpdateCity
 }: LocationDialogsProps) {
   return (
-    <div className="flex gap-2">
+    <>
       {/* Add Province Dialog */}
       <Dialog 
         open={dialogs.province.add.isOpen} 
         onOpenChange={dialogs.province.add.setOpen}
       >
-        <DialogTrigger asChild>
-          <Button 
-            onClick={() => dialogs.province.add.setOpen(true)} 
-            className="flex items-center gap-2"
-          >
-            <PlusCircle className="h-4 w-4" />
-            Add Province
-          </Button>
-        </DialogTrigger>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Add New Province</DialogTitle>
@@ -82,16 +73,6 @@ export default function LocationDialogs({
         open={dialogs.city.add.isOpen} 
         onOpenChange={dialogs.city.add.setOpen}
       >
-        <DialogTrigger asChild>
-          <Button 
-            onClick={() => dialogs.city.add.setOpen(true)} 
-            className="flex items-center gap-2"
-            disabled={provinces.length === 0}
-          >
-            <PlusCircle className="h-4 w-4" />
-            Add City
-          </Button>
-        </DialogTrigger>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Add New City</DialogTitle>
@@ -157,6 +138,6 @@ export default function LocationDialogs({
           )}
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   );
 } 
