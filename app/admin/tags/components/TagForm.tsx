@@ -8,6 +8,7 @@ import { getUniqueCategories } from "../lib/utils";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { DialogFooter } from "@/components/ui/dialog";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Form,
   FormControl,
@@ -27,13 +28,14 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState, useMemo, useEffect } from "react";
+import { Info } from "lucide-react";
 
 // Validation schema for tag form
 const tagFormSchema = z.object({
   name: z.string().min(1, "Tag name is required").max(100),
-  category: z.string().optional(),
+  category: z.string().min(1, "Category is required"),
   active: z.boolean().default(true),
-  newCategory: z.string().optional(),
+  createMissingCategory: z.boolean().default(false),
 });
 
 // Validation schema for category form
@@ -57,6 +59,7 @@ export default function TagForm({ tag, allTags, onSubmit, isSubmitting }: TagFor
   
   // Get unique categories from all tags
   const categories = useMemo(() => getUniqueCategories(allTags), [allTags]);
+  const hasCategoriesAvailable = categories.length > 0;
   
   // Initialize tag form
   const tagForm = useForm<TagFormValues>({
@@ -65,7 +68,7 @@ export default function TagForm({ tag, allTags, onSubmit, isSubmitting }: TagFor
       name: tag?.name || "",
       category: tag?.category || (categories.length > 0 ? categories[0] : ""),
       active: tag?.active ?? true,
-      newCategory: "",
+      createMissingCategory: categories.length === 0, // Auto-enable when no categories exist
     },
   });
   
@@ -80,11 +83,24 @@ export default function TagForm({ tag, allTags, onSubmit, isSubmitting }: TagFor
   
   // Handle tag form submission
   const handleTagSubmit = (values: TagFormValues) => {
-    onSubmit({
-      name: values.name,
-      category: values.category,
-      active: values.active,
-    });
+    const { name, category, active, createMissingCategory } = values;
+    
+    // If no categories exist or createMissingCategory is enabled 
+    // and the category doesn't match any existing category,
+    // we'll create both the category and the tag
+    if ((categories.length === 0 || createMissingCategory) && !categories.includes(category)) {
+      onSubmit({
+        name: name,
+        category: category, // Use the provided category name
+        active: active,
+      });
+    } else {
+      onSubmit({
+        name: name,
+        category: category,
+        active: active,
+      });
+    }
   };
   
   // Handle category form submission - creates a tag with the category name
@@ -96,6 +112,13 @@ export default function TagForm({ tag, allTags, onSubmit, isSubmitting }: TagFor
     });
   };
   
+  // Auto switch to category tab if no categories exist
+  useEffect(() => {
+    if (categories.length === 0 && !tag) {
+      setActiveTab("category");
+    }
+  }, [categories, tag]);
+  
   // Reset forms when the tag changes
   useEffect(() => {
     if (tag) {
@@ -103,6 +126,7 @@ export default function TagForm({ tag, allTags, onSubmit, isSubmitting }: TagFor
         name: tag.name,
         category: tag.category,
         active: tag.active,
+        createMissingCategory: false,
       });
       setActiveTab("tag"); // Always show tag tab when editing
     }
@@ -118,6 +142,15 @@ export default function TagForm({ tag, allTags, onSubmit, isSubmitting }: TagFor
       <TabsContent value="tag" className="mt-4">
         <Form {...tagForm}>
           <form onSubmit={tagForm.handleSubmit(handleTagSubmit)} className="space-y-4">
+            {!hasCategoriesAvailable && (
+              <Alert className="bg-blue-50">
+                <Info className="h-4 w-4" />
+                <AlertDescription>
+                  No categories found. You can create a new tag with a category, and both will be created.
+                </AlertDescription>
+              </Alert>
+            )}
+          
             <FormField
               control={tagForm.control}
               name="name"
@@ -141,30 +174,65 @@ export default function TagForm({ tag, allTags, onSubmit, isSubmitting }: TagFor
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Category</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value || (categories.length > 0 ? categories[0] : "")}
-                  >
+                  {hasCategoriesAvailable ? (
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a category" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {categories.map((category) => (
+                          <SelectItem key={category} value={category}>
+                            {category}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
                     <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a category" />
-                      </SelectTrigger>
+                      <Input 
+                        placeholder="Enter new category name" 
+                        {...field} 
+                      />
                     </FormControl>
-                    <SelectContent>
-                      {categories.map((category) => (
-                        <SelectItem key={category} value={category}>
-                          {category}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  )}
                   <FormDescription>
-                    The category this tag belongs to.
+                    {hasCategoriesAvailable 
+                      ? "The category this tag belongs to."
+                      : "Enter a new category name. This will create both the category and tag."
+                    }
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
             />
+            
+            {hasCategoriesAvailable && (
+              <FormField
+                control={tagForm.control}
+                name="createMissingCategory"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center space-x-2 rounded-md border p-3">
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <div className="space-y-0.5">
+                      <FormLabel>Create New Categories</FormLabel>
+                      <FormDescription>
+                        Allow entering custom category names to create new categories.
+                      </FormDescription>
+                    </div>
+                  </FormItem>
+                )}
+              />
+            )}
             
             <FormField
               control={tagForm.control}
