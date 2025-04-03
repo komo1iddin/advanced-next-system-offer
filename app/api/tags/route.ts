@@ -1,4 +1,5 @@
 import Tag from "@/lib/models/Tag";
+import User from "@/lib/models/User";
 import connectToDatabase from "@/lib/mongodb";
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
@@ -49,33 +50,35 @@ export async function GET(request: NextRequest) {
 // POST /api/tags - Create a new tag (admin only)
 export async function POST(request: NextRequest) {
   try {
-    // Check authentication and admin status
+    // Check authentication
     const session = await getServerSession();
-    console.log("POST /api/tags - Session:", session?.user);
+    console.log("POST /api/tags - Session:", JSON.stringify(session, null, 2));
     
-    if (!session || !session.user) {
-      console.log("POST /api/tags - No session or user");
+    // Verify session exists and has user email
+    if (!session?.user?.email) {
+      console.log("POST /api/tags - No session or user email");
       return NextResponse.json(
-        { error: "Unauthorized - Not authenticated" },
+        { error: "Authentication required" },
         { status: 401 }
       );
     }
     
-    // Verbose debug of the user object to understand what fields are available
-    console.log("POST /api/tags - Full user object:", JSON.stringify(session.user, null, 2));
-    console.log("POST /api/tags - User role:", session.user.role);
+    // Connect to database
+    await connectToDatabase();
     
-    // Check if user has admin role
-    if (session.user.role !== "admin") {
-      console.log("POST /api/tags - Not admin role:", session.user.role);
+    // Verify admin rights through database lookup instead of relying on session
+    const user = await User.findOne({ email: session.user.email });
+    console.log(`Looking up user with email: ${session.user.email} to verify admin rights`);
+    
+    if (!user || user.role !== 'admin') {
+      console.log(`User not found or not admin. User: ${user?._id}, Role: ${user?.role}`);
       return NextResponse.json(
-        { error: "Unauthorized - Admin role required" },
+        { error: "Admin rights required" },
         { status: 403 }
       );
     }
-
-    // Connect to database
-    await connectToDatabase();
+    
+    console.log('Verified admin rights through database lookup');
 
     // Parse request body
     const body = await request.json();

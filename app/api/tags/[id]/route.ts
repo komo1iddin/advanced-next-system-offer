@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase from '@/lib/mongodb';
 import Tag from '@/lib/models/Tag';
+import User from '@/lib/models/User';
 import { getServerSession } from 'next-auth/next';
 
 // GET a specific tag by ID
@@ -45,31 +46,35 @@ export async function PUT(
   try {
     console.log(`PUT /api/tags/${params.id} - Request received`);
     
-    // Check if user is authenticated and has admin privileges
+    // Check if user is authenticated
     const session = await getServerSession();
-    console.log(`PUT /api/tags/${params.id} - Session:`, session?.user);
+    console.log(`PUT /api/tags/${params.id} - Session:`, JSON.stringify(session, null, 2));
     
-    if (!session || !session.user) {
-      console.log(`PUT /api/tags/${params.id} - No session or user`);
+    // Verify session exists and has user email
+    if (!session?.user?.email) {
+      console.log(`PUT /api/tags/${params.id} - No session or user email`);
       return NextResponse.json(
-        { error: 'Unauthorized - Not authenticated' },
+        { error: 'Authentication required' },
         { status: 401 }
-      );
-    }
-    
-    // Debug user role
-    console.log(`PUT /api/tags/${params.id} - User role:`, session.user.role);
-    
-    if (session.user.role !== 'admin') {
-      console.log(`PUT /api/tags/${params.id} - Not admin role:`, session.user.role);
-      return NextResponse.json(
-        { error: 'Unauthorized - Admin role required' },
-        { status: 403 }
       );
     }
     
     // Connect to the database
     await connectToDatabase();
+    
+    // Verify admin rights through database lookup instead of relying on session
+    const user = await User.findOne({ email: session.user.email });
+    console.log(`Looking up user with email: ${session.user.email} to verify admin rights`);
+    
+    if (!user || user.role !== 'admin') {
+      console.log(`User not found or not admin. User: ${user?._id}, Role: ${user?.role}`);
+      return NextResponse.json(
+        { error: 'Admin rights required' },
+        { status: 403 }
+      );
+    }
+    
+    console.log('Verified admin rights through database lookup');
     
     // Get the ID from params
     const id = params.id;
@@ -125,31 +130,35 @@ export async function DELETE(
   try {
     console.log(`DELETE /api/tags/${params.id} - Request received`);
     
-    // Check if user is authenticated and has admin privileges
+    // Check if user is authenticated
     const session = await getServerSession();
-    console.log(`DELETE /api/tags/${params.id} - Session:`, session?.user);
+    console.log(`DELETE /api/tags/${params.id} - Session:`, JSON.stringify(session, null, 2));
     
-    if (!session || !session.user) {
-      console.log(`DELETE /api/tags/${params.id} - No session or user`);
+    // Verify session exists and has user email
+    if (!session?.user?.email) {
+      console.log(`DELETE /api/tags/${params.id} - No session or user email`);
       return NextResponse.json(
-        { error: 'Unauthorized - Not authenticated' },
+        { error: 'Authentication required' },
         { status: 401 }
-      );
-    }
-    
-    // Debug user role
-    console.log(`DELETE /api/tags/${params.id} - User role:`, session.user.role);
-    
-    if (session.user.role !== 'admin') {
-      console.log(`DELETE /api/tags/${params.id} - Not admin role:`, session.user.role);
-      return NextResponse.json(
-        { error: 'Unauthorized - Admin role required' },
-        { status: 403 }
       );
     }
     
     // Connect to the database
     await connectToDatabase();
+    
+    // Verify admin rights through database lookup instead of relying on session
+    const user = await User.findOne({ email: session.user.email });
+    console.log(`Looking up user with email: ${session.user.email} to verify admin rights`);
+    
+    if (!user || user.role !== 'admin') {
+      console.log(`User not found or not admin. User: ${user?._id}, Role: ${user?.role}`);
+      return NextResponse.json(
+        { error: 'Admin rights required' },
+        { status: 403 }
+      );
+    }
+    
+    console.log('Verified admin rights through database lookup');
     
     // Get the ID from params
     const id = params.id;
