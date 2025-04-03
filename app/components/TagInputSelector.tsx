@@ -1,24 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { X, Plus, RefreshCw, Check, ChevronsUpDown } from "lucide-react";
+import { useState, useEffect, useRef, KeyboardEvent } from "react";
+import { X, Check, ChevronsUpDown, Search, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Tabs, 
-  TabsContent, 
-  TabsList, 
-  TabsTrigger 
-} from "@/components/ui/tabs";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import {
   Command,
   CommandEmpty,
@@ -32,8 +19,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Spinner } from "@/components/ui/spinner";
-import { fetchTags, addTag } from "@/app/admin/tags/lib/tag-service";
+import { Spinner } from "./ui/spinner";
+import { fetchTags, addTag } from "../admin/tags/lib/tag-service";
 
 // Define the TagOption interface locally
 export interface TagOption {
@@ -41,208 +28,6 @@ export interface TagOption {
   name: string;
   category: string;
   active?: boolean;
-}
-
-// Include the TagSelector component directly
-interface TagSelectorProps {
-  tags: TagOption[];
-  selectedTags?: string[];
-  onChange: (selectedTagIds: string[]) => void;
-  placeholder?: string;
-  className?: string;
-  disabled?: boolean;
-  multiple?: boolean;
-  maxSelections?: number;
-}
-
-function TagSelector({
-  tags,
-  selectedTags = [],
-  onChange,
-  placeholder = "Select tags...",
-  className,
-  disabled = false,
-  multiple = true,
-  maxSelections = undefined,
-}: TagSelectorProps) {
-  const [open, setOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  
-  // Group tags by categories for better organization
-  const tagsByCategory = (() => {
-    const grouped: Record<string, TagOption[]> = {};
-    
-    // Only show active tags
-    const activeTags = tags.filter(tag => tag.active !== false);
-    
-    activeTags.forEach(tag => {
-      if (!grouped[tag.category]) {
-        grouped[tag.category] = [];
-      }
-      grouped[tag.category].push(tag);
-    });
-    
-    return grouped;
-  })();
-  
-  // Filter tags based on search query
-  const filteredCategories = (() => {
-    if (!searchQuery) return Object.keys(tagsByCategory);
-    
-    const query = searchQuery.toLowerCase();
-    const matchingCategories: string[] = [];
-    
-    Object.entries(tagsByCategory).forEach(([category, categoryTags]) => {
-      // Check if category matches search
-      if (category.toLowerCase().includes(query)) {
-        matchingCategories.push(category);
-        return;
-      }
-      
-      // Check if any tag in this category matches search
-      const hasMatchingTag = categoryTags.some(tag => 
-        tag.name.toLowerCase().includes(query)
-      );
-      
-      if (hasMatchingTag) {
-        matchingCategories.push(category);
-      }
-    });
-    
-    return matchingCategories;
-  })();
-  
-  // Get tag names from IDs for display
-  const selectedTagNames = selectedTags.map(tagId => {
-    const matchingTag = tags.find(tag => tag.id === tagId || tag.name === tagId);
-    return matchingTag?.name || tagId;
-  });
-  
-  // Handle selecting a tag
-  const handleSelect = (tagId: string) => {
-    if (multiple) {
-      if (selectedTags.includes(tagId)) {
-        // Remove tag if already selected
-        onChange(selectedTags.filter(id => id !== tagId));
-      } else {
-        // Add tag if not at max selections
-        if (maxSelections && selectedTags.length >= maxSelections) {
-          return; // Don't add if at max selections
-        }
-        onChange([...selectedTags, tagId]);
-      }
-    } else {
-      // Single selection mode
-      onChange([tagId]);
-      setOpen(false);
-    }
-  };
-  
-  // Remove a tag from selection
-  const removeTag = (tagId: string) => {
-    onChange(selectedTags.filter(id => id !== tagId));
-  };
-  
-  // Close dropdown when selecting in single mode
-  useEffect(() => {
-    if (!multiple && selectedTags.length > 0) {
-      setOpen(false);
-    }
-  }, [selectedTags, multiple]);
-
-  return (
-    <div className={cn("relative", className)}>
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            role="combobox"
-            aria-expanded={open}
-            className={cn(
-              "w-full justify-between text-left font-normal",
-              !selectedTags.length && "text-muted-foreground"
-            )}
-            disabled={disabled}
-          >
-            {selectedTags.length > 0 ? (
-              multiple ? (
-                <span className="mr-1">
-                  {`${selectedTags.length} selected`}
-                </span>
-              ) : (
-                <span className="mr-1">{selectedTagNames[0]}</span>
-              )
-            ) : (
-              placeholder
-            )}
-            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-full p-0" align="start">
-          <Command shouldFilter={false}>
-            <CommandInput 
-              placeholder="Search tags..." 
-              value={searchQuery}
-              onValueChange={setSearchQuery}
-            />
-            <CommandEmpty>No tags found.</CommandEmpty>
-            <CommandList>
-              {filteredCategories.map((category) => (
-                <CommandGroup key={category} heading={category}>
-                  {tagsByCategory[category]
-                    .filter(tag => 
-                      !searchQuery || 
-                      tag.name.toLowerCase().includes(searchQuery.toLowerCase())
-                    )
-                    .map((tag) => {
-                      const tagId = tag.id || tag.name;
-                      const isSelected = selectedTags.includes(tagId);
-                      return (
-                        <CommandItem
-                          key={tagId}
-                          value={tag.name}
-                          onSelect={() => handleSelect(tagId)}
-                        >
-                          <Check
-                            className={cn(
-                              "mr-2 h-4 w-4",
-                              isSelected ? "opacity-100" : "opacity-0"
-                            )}
-                          />
-                          {tag.name}
-                        </CommandItem>
-                      );
-                    })}
-                </CommandGroup>
-              ))}
-            </CommandList>
-          </Command>
-        </PopoverContent>
-      </Popover>
-      
-      {/* Selected tags badges */}
-      {multiple && selectedTags.length > 0 && (
-        <div className="flex flex-wrap gap-1 mt-2">
-          {selectedTags.map((tagId) => {
-            const matchingTag = tags.find(tag => tag.id === tagId || tag.name === tagId);
-            const tagName = matchingTag?.name || tagId;
-            return (
-              <Badge key={tagId} variant="secondary" className="px-2 py-1">
-                {tagName}
-                <button
-                  type="button"
-                  onClick={() => removeTag(tagId)}
-                  className="ml-1 rounded-full outline-none focus:ring-2 focus:ring-offset-2"
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              </Badge>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
 }
 
 interface TagInputSelectorProps {
@@ -262,26 +47,58 @@ export function TagInputSelector({
   maxTags,
   allowCustomTags = true
 }: TagInputSelectorProps) {
-  // For direct input
-  const [currentItem, setCurrentItem] = useState("");
+  // For direct input and search
+  const [inputValue, setInputValue] = useState("");
+  const [open, setOpen] = useState(false);
   
-  // For tag selector
+  // For tag state management
   const [tagsLoading, setTagsLoading] = useState(false);
   const [availableTags, setAvailableTags] = useState<TagOption[]>([]);
+  const [filteredTags, setFilteredTags] = useState<TagOption[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [addTagDialogOpen, setAddTagDialogOpen] = useState(false);
-  const [newTagName, setNewTagName] = useState("");
-  const [newTagCategory, setNewTagCategory] = useState("");
-  const [isAddingTag, setIsAddingTag] = useState(false);
-  const [inputMode, setInputMode] = useState<"select" | "input">("select");
+  const [creatingTag, setCreatingTag] = useState(false);
+  
+  // Refs
+  const inputRef = useRef<HTMLInputElement>(null);
   
   // Get unique categories
   const categories = [...new Set(availableTags.map(tag => tag.category))];
+  
+  // Group tags by categories for better organization
+  const tagsByCategory = (() => {
+    const grouped: Record<string, TagOption[]> = {};
+    
+    // Only show active tags that match filter
+    filteredTags.forEach(tag => {
+      if (!grouped[tag.category]) {
+        grouped[tag.category] = [];
+      }
+      grouped[tag.category].push(tag);
+    });
+    
+    return grouped;
+  })();
   
   // Load tags on mount
   useEffect(() => {
     loadTags();
   }, []);
+  
+  // Update filtered tags when input or available tags change
+  useEffect(() => {
+    if (!inputValue.trim()) {
+      setFilteredTags(availableTags);
+      return;
+    }
+    
+    const query = inputValue.toLowerCase().trim();
+    const filtered = availableTags.filter(tag => 
+      tag.name.toLowerCase().includes(query) || 
+      tag.category.toLowerCase().includes(query)
+    );
+    
+    setFilteredTags(filtered);
+  }, [inputValue, availableTags]);
   
   // Function to load tags
   const loadTags = async () => {
@@ -296,6 +113,12 @@ export function TagInputSelector({
         category: tag.category,
         active: tag.active
       })));
+      setFilteredTags(tags.map(tag => ({
+        id: tag._id,
+        name: tag.name,
+        category: tag.category,
+        active: tag.active
+      })));
     } catch (error) {
       console.error("Error loading tags:", error);
       setErrorMessage("Failed to load tags. Please try again.");
@@ -304,220 +127,219 @@ export function TagInputSelector({
     }
   };
   
-  // Handle manual add
-  const addItem = () => {
-    if (maxTags && items.length >= maxTags) {
-      return;
-    }
-    
-    if (currentItem.trim() && !items.includes(currentItem.trim())) {
-      setItems([...items, currentItem.trim()]);
-      setCurrentItem("");
-    }
-  };
-  
-  // Remove item
-  const removeItem = (itemToRemove: string) => {
-    setItems(items.filter(item => item !== itemToRemove));
-  };
-  
-  // Handle key press
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      addItem();
-    }
-  };
-  
-  // Handle tag selection change
-  const handleTagSelectionChange = (selectedTagIds: string[]) => {
-    setItems(selectedTagIds);
+  // Checks if tag exists (case insensitive)
+  const tagExists = (tagName: string): TagOption | undefined => {
+    return availableTags.find(
+      tag => tag.name.toLowerCase() === tagName.toLowerCase()
+    );
   };
   
   // Create a new tag
-  const handleCreateTag = async () => {
-    if (!newTagName.trim()) {
-      return;
-    }
+  const createTag = async (tagName: string, category: string = "General") => {
+    if (!tagName.trim()) return null;
     
-    setIsAddingTag(true);
+    setCreatingTag(true);
     
     try {
       const tag = await addTag({
-        name: newTagName.trim(),
-        category: newTagCategory.trim() || "General",
+        name: tagName.trim(),
+        category: category.trim() || "General",
         active: true
       });
       
       // Add the newly created tag to the available tags
-      setAvailableTags([
-        ...availableTags,
-        {
-          id: tag._id,
-          name: tag.name,
-          category: tag.category,
-          active: true
-        }
-      ]);
+      const newTag = {
+        id: tag._id,
+        name: tag.name,
+        category: tag.category,
+        active: true
+      };
       
-      // Select the new tag
-      setItems([...items, tag._id]);
+      setAvailableTags(prev => [...prev, newTag]);
       
-      // Close the dialog
-      setAddTagDialogOpen(false);
-      setNewTagName("");
-      setNewTagCategory("");
+      return newTag;
     } catch (error) {
       console.error("Error creating tag:", error);
+      return null;
     } finally {
-      setIsAddingTag(false);
+      setCreatingTag(false);
     }
+  };
+  
+  // Add tag to selection
+  const addTagToSelection = (tagId: string) => {
+    if (maxTags && items.length >= maxTags) {
+      return;
+    }
+    
+    if (!items.includes(tagId)) {
+      setItems([...items, tagId]);
+    }
+  };
+  
+  // Handle adding tag from input
+  const handleAddTag = async () => {
+    const value = inputValue.trim();
+    if (!value) return;
+    
+    // Check if tag already exists
+    const existingTag = tagExists(value);
+    
+    if (existingTag) {
+      // Add existing tag
+      addTagToSelection(existingTag.id || existingTag.name);
+    } else if (allowCustomTags) {
+      // Create and add new tag
+      const newTag = await createTag(value);
+      if (newTag) {
+        addTagToSelection(newTag.id || newTag.name);
+      }
+    }
+    
+    // Clear input
+    setInputValue("");
+  };
+  
+  // Handle selecting a tag from dropdown
+  const handleSelectTag = (tag: TagOption) => {
+    addTagToSelection(tag.id || tag.name);
+    setInputValue("");
+    inputRef.current?.focus();
+  };
+  
+  // Handle key press
+  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if ((e.key === "Enter" || e.key === ",") && inputValue.trim()) {
+      e.preventDefault();
+      handleAddTag();
+    } else if (e.key === "Backspace" && !inputValue && items.length > 0) {
+      // Remove last tag when pressing backspace with empty input
+      setItems(items.slice(0, -1));
+    }
+  };
+  
+  // Remove tag from selection
+  const removeTag = (tagId: string) => {
+    setItems(items.filter(item => item !== tagId));
   };
 
   return (
-    <div className="space-y-4">
-      <Tabs value={inputMode} onValueChange={(value) => setInputMode(value as "select" | "input")}>
-        <div className="flex justify-between items-center mb-2">
-          <TabsList>
-            <TabsTrigger value="select">Select Tags</TabsTrigger>
-            {allowCustomTags && <TabsTrigger value="input">Custom Input</TabsTrigger>}
-          </TabsList>
-          
-          <div className="flex space-x-2">
-            <Button 
-              type="button" 
-              variant="outline" 
-              size="sm"
-              onClick={loadTags}
-              disabled={tagsLoading}
-            >
-              {tagsLoading ? <Spinner className="h-4 w-4 mr-1" /> : <RefreshCw className="h-4 w-4 mr-1" />}
-              Refresh
-            </Button>
+    <div className="w-full space-y-2">
+      <div className="flex flex-col space-y-2">
+        <div className="relative">
+          <div className="flex flex-wrap gap-1 p-1 border rounded-md items-center min-h-10">
+            {/* Selected tags */}
+            {items.map((tagId) => {
+              const tag = availableTags.find(t => t.id === tagId || t.name === tagId);
+              const displayName = tag ? tag.name : tagId;
+              
+              return (
+                <Badge key={tagId} variant={badgeVariant} className="flex items-center gap-1 px-2 py-1">
+                  {displayName}
+                  <button
+                    type="button"
+                    onClick={() => removeTag(tagId)}
+                    className="ml-1 rounded-full hover:bg-muted w-4 h-4 inline-flex items-center justify-center"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </Badge>
+              );
+            })}
             
-            <Dialog open={addTagDialogOpen} onOpenChange={setAddTagDialogOpen}>
-              <DialogTrigger asChild>
-                <Button type="button" variant="outline" size="sm">
-                  <Plus className="h-4 w-4 mr-1" />
-                  New Tag
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Create New Tag</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Tag Name</label>
-                    <Input
-                      value={newTagName}
-                      onChange={(e) => setNewTagName(e.target.value)}
-                      placeholder="Enter tag name"
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Category</label>
-                    <Input
-                      value={newTagCategory}
-                      onChange={(e) => setNewTagCategory(e.target.value)}
-                      placeholder="Enter category or leave blank for General"
-                      list="categories"
-                    />
-                    <datalist id="categories">
-                      {categories.map(category => (
-                        <option key={category} value={category} />
-                      ))}
-                    </datalist>
-                  </div>
-                  
-                  <div className="flex justify-end space-x-2 pt-4">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setAddTagDialogOpen(false)}
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      type="button"
-                      onClick={handleCreateTag}
-                      disabled={isAddingTag || !newTagName.trim()}
-                    >
-                      {isAddingTag ? <Spinner className="h-4 w-4 mr-1" /> : null}
-                      Create Tag
-                    </Button>
-                  </div>
-                </div>
-              </DialogContent>
-            </Dialog>
-          </div>
-        </div>
-
-        <TabsContent value="select" className="space-y-4">
-          {tagsLoading ? (
-            <div className="flex justify-center py-4">
-              <Spinner className="h-6 w-6" />
-            </div>
-          ) : errorMessage ? (
-            <div className="text-destructive py-2">{errorMessage}</div>
-          ) : (
-            <TagSelector
-              tags={availableTags}
-              selectedTags={items}
-              onChange={handleTagSelectionChange}
-              placeholder={placeholder}
-              maxSelections={maxTags}
-            />
-          )}
-        </TabsContent>
-        
-        {allowCustomTags && (
-          <TabsContent value="input" className="space-y-4">
-            <div className="flex gap-2">
+            <div className="grow flex-1">
               <Input
-                value={currentItem}
-                onChange={(e) => setCurrentItem(e.target.value)}
-                placeholder={placeholder}
+                ref={inputRef}
+                type="text"
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
                 onKeyDown={handleKeyDown}
-              />
-              <Button 
-                type="button" 
-                onClick={addItem}
+                placeholder={items.length === 0 ? placeholder : ""}
+                className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0 p-0 pl-1 h-8"
                 disabled={maxTags ? items.length >= maxTags : false}
-              >
-                Add
-              </Button>
+              />
             </div>
-            
-            <div className="flex flex-wrap gap-2">
-              {items.length === 0 && (
-                <p className="text-sm text-muted-foreground">No items added yet</p>
+          </div>
+          
+          {/* Dropdown for tags */}
+          {inputValue.trim().length > 0 && (
+            <div className="absolute w-full z-10 bg-background border rounded-md mt-1 shadow-md">
+              {tagsLoading ? (
+                <div className="flex justify-center items-center py-4">
+                  <Spinner className="h-5 w-5 mr-2" />
+                  <span>Loading tags...</span>
+                </div>
+              ) : (
+                <Command className="rounded-lg border shadow-md">
+                  <CommandList>
+                    {Object.keys(tagsByCategory).length > 0 ? (
+                      <>
+                        {Object.entries(tagsByCategory).map(([category, tags]) => (
+                          <CommandGroup key={category} heading={category}>
+                            {tags.map((tag) => {
+                              const tagId = tag.id || tag.name;
+                              const isSelected = items.includes(tagId);
+                              
+                              return (
+                                <CommandItem
+                                  key={tagId}
+                                  value={tag.name}
+                                  onSelect={() => handleSelectTag(tag)}
+                                  className="flex items-center"
+                                >
+                                  <div className="flex items-center flex-1">
+                                    <Check
+                                      className={cn(
+                                        "mr-2 h-4 w-4",
+                                        isSelected ? "opacity-100" : "opacity-0"
+                                      )}
+                                    />
+                                    <span>{tag.name}</span>
+                                  </div>
+                                </CommandItem>
+                              );
+                            })}
+                          </CommandGroup>
+                        ))}
+                        
+                        {/* Option to create a new tag if not found */}
+                        {allowCustomTags && tagExists(inputValue.trim()) === undefined && (
+                          <CommandItem 
+                            onSelect={handleAddTag}
+                            className="border-t"
+                          >
+                            <div className="flex items-center text-primary">
+                              <span>Create tag "{inputValue.trim()}"</span>
+                            </div>
+                          </CommandItem>
+                        )}
+                      </>
+                    ) : (
+                      <CommandEmpty className="py-3 text-center">
+                        {allowCustomTags ? (
+                          <div>
+                            <p>No matching tags found</p>
+                            <p className="text-sm text-muted-foreground">Press Enter to create "{inputValue.trim()}"</p>
+                          </div>
+                        ) : (
+                          <p>No matching tags found</p>
+                        )}
+                      </CommandEmpty>
+                    )}
+                  </CommandList>
+                </Command>
               )}
             </div>
-          </TabsContent>
+          )}
+        </div>
+        
+        <div className="text-xs text-muted-foreground">
+          Type to search tags. Press Enter or comma to add a new tag.
+        </div>
+        
+        {errorMessage && (
+          <div className="text-destructive text-sm">{errorMessage}</div>
         )}
-      </Tabs>
-      
-      <div className="flex flex-wrap gap-2">
-        {items.map((item) => {
-          // Try to find the tag name if it's an ID
-          const tag = availableTags.find(t => t.id === item);
-          const displayName = tag ? tag.name : item;
-          
-          return (
-            <Badge key={item} variant={badgeVariant} className="flex items-center gap-1">
-              {displayName}
-              <button
-                type="button"
-                onClick={() => removeItem(item)}
-                className="ml-1 rounded-full hover:bg-muted w-4 h-4 inline-flex items-center justify-center"
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </Badge>
-          );
-        })}
       </div>
     </div>
   );
