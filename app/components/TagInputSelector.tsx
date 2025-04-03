@@ -263,15 +263,15 @@ export function TagInputSelector({
           
           {/* Dropdown for tags */}
           {inputValue.trim().length > 0 && (
-            <div className="absolute w-full z-10 bg-background border rounded-md mt-1 shadow-md">
+            <div className="absolute w-full z-50 bg-background border rounded-md mt-1 shadow-md">
               {tagsLoading ? (
                 <div className="flex justify-center items-center py-4">
                   <Spinner className="h-5 w-5 mr-2" />
                   <span>Loading tags...</span>
                 </div>
               ) : (
-                <Command className="rounded-lg border shadow-md">
-                  <CommandList>
+                <Command className="rounded-lg border shadow-md w-full">
+                  <CommandList className="max-h-[200px] overflow-auto">
                     {Object.keys(tagsByCategory).length > 0 ? (
                       <>
                         {Object.entries(tagsByCategory).map(([category, tags]) => (
@@ -285,9 +285,9 @@ export function TagInputSelector({
                                   key={tagId}
                                   value={tag.name}
                                   onSelect={() => handleSelectTag(tag)}
-                                  className="flex items-center"
+                                  className="flex items-center cursor-pointer hover:bg-accent focus:bg-accent"
                                 >
-                                  <div className="flex items-center flex-1">
+                                  <div className="flex items-center flex-1 pointer-events-none">
                                     <Check
                                       className={cn(
                                         "mr-2 h-4 w-4",
@@ -306,9 +306,9 @@ export function TagInputSelector({
                         {allowCustomTags && tagExists(inputValue.trim()) === undefined && (
                           <CommandItem 
                             onSelect={handleAddTag}
-                            className="border-t"
+                            className="border-t cursor-pointer hover:bg-accent focus:bg-accent"
                           >
-                            <div className="flex items-center text-primary">
+                            <div className="flex items-center text-primary pointer-events-none">
                               <span>Create tag "{inputValue.trim()}"</span>
                             </div>
                           </CommandItem>
