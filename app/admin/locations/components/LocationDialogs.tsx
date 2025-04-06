@@ -1,16 +1,10 @@
 import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
-  DialogHeader, 
-  DialogTitle,
   DialogTrigger
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
 import { Province, City } from "../lib/location-service";
-import ProvinceForm from "./ProvinceForm";
-import CityForm from "./CityForm";
+import { LocationFormModal } from "./LocationFormModal";
 
 interface DialogControl<T> {
   isOpen: boolean;
@@ -47,97 +41,65 @@ export default function LocationDialogs({
 }: LocationDialogsProps) {
   return (
     <>
-      {/* Add Province Dialog */}
-      <Dialog 
-        open={dialogs.province.add.isOpen} 
+      {/* Add Province Modal */}
+      <LocationFormModal
+        entityType="province"
+        mode="create"
+        provinces={provinces}
+        onSubmit={onAddProvince}
+        isSubmitting={dialogs.province.add.isSubmitting}
+        open={dialogs.province.add.isOpen}
         onOpenChange={dialogs.province.add.setOpen}
       >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add New Province</DialogTitle>
-            <DialogDescription>
-              Add a new province/state to the system.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <ProvinceForm
-            onSubmit={onAddProvince}
-            onCancel={() => dialogs.province.add.setOpen(false)}
-            isSubmitting={dialogs.province.add.isSubmitting}
-          />
-        </DialogContent>
-      </Dialog>
+        <Button>
+          <PlusCircle className="mr-2 h-4 w-4" />
+          Add Province
+        </Button>
+      </LocationFormModal>
       
-      {/* Add City Dialog */}
-      <Dialog 
-        open={dialogs.city.add.isOpen} 
+      {/* Add City Modal */}
+      <LocationFormModal
+        entityType="city"
+        mode="create"
+        provinces={provinces}
+        onSubmit={onAddCity}
+        isSubmitting={dialogs.city.add.isSubmitting}
+        open={dialogs.city.add.isOpen}
         onOpenChange={dialogs.city.add.setOpen}
       >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add New City</DialogTitle>
-            <DialogDescription>
-              Add a new city and link it to a province.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <CityForm
-            provinces={provinces}
-            onSubmit={onAddCity}
-            onCancel={() => dialogs.city.add.setOpen(false)}
-            isSubmitting={dialogs.city.add.isSubmitting}
-          />
-        </DialogContent>
-      </Dialog>
+        <Button>
+          <PlusCircle className="mr-2 h-4 w-4" />
+          Add City
+        </Button>
+      </LocationFormModal>
       
-      {/* Edit Province Dialog */}
-      <Dialog 
-        open={dialogs.province.edit.isOpen} 
-        onOpenChange={dialogs.province.edit.setOpen}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit Province</DialogTitle>
-            <DialogDescription>
-              Update province details.
-            </DialogDescription>
-          </DialogHeader>
-          
-          {dialogs.province.edit.selected && (
-            <ProvinceForm
-              initialData={dialogs.province.edit.selected}
-              onSubmit={onUpdateProvince}
-              onCancel={() => dialogs.province.edit.setOpen(false)}
-              isSubmitting={dialogs.province.edit.isSubmitting}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
+      {/* Edit Province Modal */}
+      {dialogs.province.edit.selected && (
+        <LocationFormModal
+          entityType="province"
+          mode="edit"
+          provinces={provinces}
+          initialData={dialogs.province.edit.selected}
+          onSubmit={onUpdateProvince}
+          isSubmitting={dialogs.province.edit.isSubmitting}
+          open={dialogs.province.edit.isOpen}
+          onOpenChange={dialogs.province.edit.setOpen}
+        />
+      )}
       
-      {/* Edit City Dialog */}
-      <Dialog 
-        open={dialogs.city.edit.isOpen} 
-        onOpenChange={dialogs.city.edit.setOpen}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit City</DialogTitle>
-            <DialogDescription>
-              Update city details.
-            </DialogDescription>
-          </DialogHeader>
-          
-          {dialogs.city.edit.selected && (
-            <CityForm
-              provinces={provinces}
-              initialData={dialogs.city.edit.selected}
-              onSubmit={onUpdateCity}
-              onCancel={() => dialogs.city.edit.setOpen(false)}
-              isSubmitting={dialogs.city.edit.isSubmitting}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
+      {/* Edit City Modal */}
+      {dialogs.city.edit.selected && (
+        <LocationFormModal
+          entityType="city"
+          mode="edit"
+          provinces={provinces}
+          initialData={dialogs.city.edit.selected}
+          onSubmit={onUpdateCity}
+          isSubmitting={dialogs.city.edit.isSubmitting}
+          open={dialogs.city.edit.isOpen}
+          onOpenChange={dialogs.city.edit.setOpen}
+        />
+      )}
     </>
   );
 } 

@@ -10,6 +10,7 @@ The system consists of:
 2. **ModalBase**: A standardized modal component with various configuration options
 3. **FormModal**: A combination of FormBase and ModalBase for the common pattern of forms within modals
 4. **useFormMode**: A utility hook for handling consistent text and behavior for create/edit forms
+5. **Standardized Form Fields**: Reusable form field components for common input types
 
 ## Components
 
@@ -207,6 +208,69 @@ export function MyFormModal() {
 }
 ```
 
+### Standardized Form Fields
+
+Pre-built form field components that encapsulate common form field patterns:
+
+#### FormTextField
+
+A standardized text input field.
+
+```tsx
+import { FormTextField } from "@/app/components/forms";
+
+// Inside your form render function:
+<FormTextField
+  name="name"
+  label="Full Name"
+  placeholder="Enter your full name"
+  required
+  disabled={isSubmitting}
+  description="Your first and last name"
+/>
+```
+
+#### FormSelectField
+
+A standardized select dropdown input.
+
+```tsx
+import { FormSelectField } from "@/app/components/forms";
+
+// Define options
+const countryOptions = [
+  { value: "us", label: "United States" },
+  { value: "ca", label: "Canada" },
+  { value: "uk", label: "United Kingdom" },
+];
+
+// Inside your form render function:
+<FormSelectField
+  name="country"
+  label="Country"
+  placeholder="Select your country"
+  options={countryOptions}
+  required
+  disabled={isSubmitting}
+/>
+```
+
+#### FormSwitchField
+
+A standardized toggle switch input.
+
+```tsx
+import { FormSwitchField } from "@/app/components/forms";
+
+// Inside your form render function:
+<FormSwitchField
+  name="active"
+  label="Active Status"
+  description="Toggle to enable or disable"
+  disabled={isSubmitting}
+/>
+```
+
 ### useFormMode
 
 A utility hook for handling consistent text and behavior for create/edit forms.
@@ -239,15 +303,99 @@ function MyForm({ mode = "create" }) {
 
 1. **Use FormModal for Entity Forms**: For any CRUD operations on entities (creating or editing), use the FormModal component.
 
-2. **Consistent Schema Validation**: Always use zod schemas for form validation to ensure consistent error messages.
+2. **Use Standardized Form Fields**: Whenever possible, use the pre-built form field components for consistent styling and behavior.
 
-3. **Controlled State Management**: For complex forms, consider controlling the form state externally (e.g., with React Query mutations).
+3. **Consistent Schema Validation**: Always use zod schemas for form validation to ensure consistent error messages.
 
-4. **Responsive Sizing**: Use the appropriate size prop based on the form complexity.
+4. **Controlled State Management**: For complex forms, consider controlling the form state externally (e.g., with React Query mutations).
 
-5. **Error Handling**: Always handle form submission errors and display them to the user.
+5. **Responsive Sizing**: Use the appropriate size prop based on the form complexity.
+
+6. **Error Handling**: Always handle form submission errors and display them to the user.
+
+7. **Field Organization**: Group related fields together and use consistent spacing between field groups.
+
+## Simplified Usage with Standardized Fields
+
+Using the standardized form fields significantly reduces boilerplate:
+
+```tsx
+import { 
+  FormBase, 
+  FormTextField, 
+  FormSelectField, 
+  FormSwitchField 
+} from "@/app/components/forms";
+import { z } from "zod";
+
+// Define schema with zod
+const formSchema = z.object({
+  name: z.string().min(2, "Name is required"),
+  email: z.string().email("Invalid email format"),
+  role: z.string().min(1, "Role is required"),
+  active: z.boolean()
+});
+
+type FormValues = z.infer<typeof formSchema>;
+
+export function UserForm() {
+  const roleOptions = [
+    { value: "admin", label: "Administrator" },
+    { value: "user", label: "Regular User" },
+    { value: "guest", label: "Guest" }
+  ];
+
+  const handleSubmit = async (data: FormValues) => {
+    // Handle submission
+    console.log(data);
+  };
+
+  return (
+    <FormBase
+      schema={formSchema}
+      defaultValues={{ name: "", email: "", role: "", active: true }}
+      onSubmit={handleSubmit}
+    >
+      {(form) => (
+        <div className="space-y-4">
+          <FormTextField
+            name="name"
+            label="Name"
+            required
+            placeholder="Enter user name"
+          />
+          
+          <FormTextField
+            name="email"
+            label="Email Address"
+            required
+            placeholder="Enter email address"
+          />
+          
+          <FormSelectField
+            name="role"
+            label="User Role"
+            required
+            options={roleOptions}
+            placeholder="Select a role"
+          />
+          
+          <FormSwitchField
+            name="active"
+            label="Active Status"
+            description="Enables user access to the system"
+          />
+        </div>
+      )}
+    </FormBase>
+  );
+}
+```
 
 ## Examples
 
 For examples, see:
-- `app/components/modals/UniversityModal.tsx` 
+- `app/components/modals/UniversityModal.tsx`
+- `app/admin/locations/components/CityForm.tsx`
+- `app/admin/locations/components/ProvinceForm.tsx`
+- `app/admin/locations/components/LocationFormModal.tsx` 
