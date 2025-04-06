@@ -10,6 +10,7 @@ StudyBridge is a platform designed to help students discover and apply for study
 - Sort offers by deadline, tuition cost, and other factors
 - Mobile-responsive design
 - Add and edit study offers with rich metadata
+- Standardized admin interfaces and forms for consistent UX
 
 ## Tech Stack
 
@@ -17,8 +18,9 @@ StudyBridge is a platform designed to help students discover and apply for study
 - **UI Components**: Radix UI, shadcn/ui
 - **Backend**: Next.js API Routes
 - **Database**: MongoDB
-- **Form Handling**: React Hook Form with Zod validation
+- **Form Handling**: Standardized form system with React Hook Form and Zod validation
 - **Date Handling**: date-fns
+- **Code Quality**: Custom ESLint plugin for form standards
 
 ## Getting Started
 
@@ -62,11 +64,30 @@ StudyBridge is a platform designed to help students discover and apply for study
 ## Project Structure
 
 - `app/` - Next.js application routes
+  - `app/components/forms/` - Standardized form system
+  - `app/components/forms/validation/` - Validation library
 - `components/` - Reusable UI components
 - `hooks/` - Custom React hooks
 - `lib/` - Utility functions and database connection
 - `lib/models/` - MongoDB models
 - `public/` - Static assets
+- `eslint-plugin-form-standards/` - Custom ESLint plugin for form standardization
+
+## Standardized Form System
+
+The project uses a comprehensive standardized form system to ensure consistency across all forms:
+
+- **FormBase**: A reusable form component built on react-hook-form and zod validation
+- **ModalBase**: A standardized modal component with consistent styling and behavior
+- **FormModal**: Combines FormBase and ModalBase for the common pattern of forms within modals
+- **Form Fields**: Standardized form field components (FormTextField, FormSelectField, FormSwitchField)
+- **Validation Library**: Reusable validation patterns using Zod for consistent form validation
+- **ESLint Plugin**: Custom ESLint rules to enforce usage of the standardized components
+
+For detailed documentation:
+- [Form System README](app/components/forms/README.md)
+- [Validation Library README](app/components/forms/validation/README.md)
+- [ESLint Plugin README](eslint-plugin-form-standards/README.md)
 
 ## Deployment
 

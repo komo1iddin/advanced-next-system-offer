@@ -179,6 +179,146 @@ export const citySchema = z.object({
   active: z.boolean(),
 });
 
+// ===== University Schemas =====
+
+/**
+ * University basic info schema
+ */
+export const universityBasicInfoSchema = z.object({
+  name: requiredString("University name is required"),
+  shortName: stringWithLength(1, 30, "Short name is required", "Short name is too long"),
+  description: optionalString(),
+  cityId: mongoId("City is required"),
+  website: url("Website URL must be valid").optional(),
+  active: z.boolean().default(true),
+});
+
+/**
+ * University contact info schema
+ */
+export const universityContactSchema = z.object({
+  email: email("Email address must be valid"),
+  phone: phoneNumber("Phone number must be valid"),
+  address: requiredString("Address is required"),
+});
+
+/**
+ * Complete university schema
+ */
+export const universitySchema = z.object({
+  name: requiredString("University name is required"),
+  shortName: stringWithLength(1, 30, "Short name is required", "Short name is too long"),
+  description: optionalString(),
+  cityId: mongoId("City is required"),
+  website: url("Website URL must be valid").optional(),
+  email: email("Email address must be valid"),
+  phone: phoneNumber("Phone number must be valid"),
+  address: requiredString("Address is required"),
+  active: z.boolean().default(true),
+});
+
+// ===== Agent Schemas =====
+
+/**
+ * Agent basic info schema
+ */
+export const agentBasicInfoSchema = z.object({
+  firstName: requiredString("First name is required"),
+  lastName: requiredString("Last name is required"),
+  email: email("Email address must be valid"),
+  phone: phoneNumber("Phone number must be valid"),
+  cityId: mongoId("City is required"),
+  active: z.boolean().default(true),
+});
+
+/**
+ * Agent details schema
+ */
+export const agentDetailsSchema = z.object({
+  bio: optionalString(),
+  specialties: z.array(z.string()).optional(),
+  yearsOfExperience: positiveNumber("Years of experience must be a positive number").optional(),
+});
+
+/**
+ * Complete agent schema
+ */
+export const agentSchema = z.object({
+  firstName: requiredString("First name is required"),
+  lastName: requiredString("Last name is required"),
+  email: email("Email address must be valid"),
+  phone: phoneNumber("Phone number must be valid"),
+  cityId: mongoId("City is required"),
+  bio: optionalString(),
+  specialties: z.array(z.string()).optional(),
+  yearsOfExperience: positiveNumber("Years of experience must be a positive number").optional(),
+  active: z.boolean().default(true),
+});
+
+// ===== Offer Schemas =====
+
+/**
+ * Offer basic info schema
+ */
+export const offerBasicInfoSchema = z.object({
+  title: requiredString("Title is required"),
+  description: requiredString("Description is required"),
+  universityId: mongoId("University is required"),
+  startDate: requiredDate("Start date is required"),
+  endDate: requiredDate("End date is required"),
+  active: z.boolean().default(true),
+}).refine(
+  (data) => data.endDate > data.startDate,
+  {
+    message: "End date must be after start date",
+    path: ["endDate"],
+  }
+);
+
+/**
+ * Offer details schema
+ */
+export const offerDetailsSchema = z.object({
+  requirements: optionalString(),
+  benefits: optionalString(),
+  scholarshipAmount: positiveNumber("Scholarship amount must be a positive number").optional(),
+  limitedSpots: z.boolean().optional(),
+  availableSpots: positiveNumber("Available spots must be a positive number").optional(),
+});
+
+/**
+ * Complete offer schema
+ */
+export const offerSchema = z.object({
+  title: requiredString("Title is required"),
+  description: requiredString("Description is required"),
+  universityId: mongoId("University is required"),
+  startDate: requiredDate("Start date is required"),
+  endDate: requiredDate("End date is required"),
+  requirements: optionalString(),
+  benefits: optionalString(),
+  scholarshipAmount: positiveNumber("Scholarship amount must be a positive number").optional(),
+  limitedSpots: z.boolean().optional(),
+  availableSpots: positiveNumber("Available spots must be a positive number").optional(),
+  active: z.boolean().default(true),
+}).refine(
+  (data) => data.endDate > data.startDate,
+  {
+    message: "End date must be after start date",
+    path: ["endDate"],
+  }
+);
+
+// ===== Tag Schema =====
+
+/**
+ * Tag schema
+ */
+export const tagSchema = z.object({
+  name: requiredString("Tag name is required"),
+  active: z.boolean().default(true),
+});
+
 // ===== User Schemas =====
 
 /**
@@ -187,6 +327,48 @@ export const citySchema = z.object({
 export const userNameSchema = z.object({
   firstName: requiredString("First name is required"),
   lastName: requiredString("Last name is required"),
+});
+
+/**
+ * User contact schema
+ */
+export const userContactSchema = z.object({
+  email: email("Email address must be valid"),
+  phone: phoneNumber("Phone number must be valid").optional(),
+});
+
+/**
+ * User profile schema
+ */
+export const userProfileSchema = z.object({
+  bio: optionalString(),
+  avatar: url("Avatar URL must be valid").optional(),
+  dateOfBirth: z.date().optional(),
+  cityId: mongoId().optional(),
+});
+
+/**
+ * Complete user schema
+ */
+export const userSchema = z.object({
+  firstName: requiredString("First name is required"),
+  lastName: requiredString("Last name is required"),
+  email: email("Email address must be valid"),
+  phone: phoneNumber("Phone number must be valid").optional(),
+  bio: optionalString(),
+  avatar: url("Avatar URL must be valid").optional(),
+  dateOfBirth: z.date().optional(),
+  cityId: mongoId().optional(),
+  active: z.boolean().default(true),
+});
+
+/**
+ * User role schema
+ */
+export const userRoleSchema = z.object({
+  role: z.enum(["admin", "manager", "user", "agent"], {
+    errorMap: () => ({ message: "Invalid role selected" }),
+  }),
 });
 
 /**
@@ -208,6 +390,21 @@ export const passwordWithConfirmationSchema = passwordSchema.extend({
     path: ["confirmPassword"],
   }
 );
+
+// ===== Application Schemas =====
+
+/**
+ * Student application schema
+ */
+export const applicationSchema = z.object({
+  userId: mongoId("User is required"),
+  offerId: mongoId("Offer is required"),
+  status: z.enum(["pending", "reviewing", "accepted", "rejected"], {
+    errorMap: () => ({ message: "Invalid status selected" }),
+  }),
+  submissionDate: z.date().default(() => new Date()),
+  notes: optionalString(),
+});
 
 // ===== Utility Functions =====
 
