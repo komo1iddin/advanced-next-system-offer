@@ -129,12 +129,7 @@ export function LocationFormModal({
           </>
         )}
       >
-        {children || (
-          <Button>
-            <PlusCircle className="mr-2 h-4 w-4" />
-            {mode === "create" ? "Add" : "Edit"} Province
-          </Button>
-        )}
+        {children}
       </FormModal>
     );
   }
@@ -178,12 +173,7 @@ export function LocationFormModal({
         </>
       )}
     >
-      {children || (
-        <Button>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          {mode === "create" ? "Add" : "Edit"} City
-        </Button>
-      )}
+      {children}
     </FormModal>
   );
 } 

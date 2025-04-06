@@ -14,6 +14,9 @@ import { useLocationsQuery } from "./hooks/useLocationsQuery";
 import LocationDialogs from "./components/LocationDialogs";
 import { LocationsTable } from "@/app/components/tables/LocationsTable";
 
+// Add CSS to prevent floating buttons
+import '@/app/globals.css';
+
 export default function LocationsPage() {
   const router = useRouter();
 
@@ -149,7 +152,16 @@ export default function LocationsPage() {
   );
 
   return (
-    <>
+    <div className="locations-page">
+      <style jsx>{`
+        /* Override any potential styling for bottom buttons */
+        .locations-page + div,
+        .locations-page + div[class*="fixed"],
+        .locations-page + button,
+        .locations-page ~ div[class*="fixed"] {
+          display: none !important;
+        }
+      `}</style>
       <AdminPageLayout
         title="Locations"
         description="Manage provinces/states and cities in your application"
@@ -185,6 +197,6 @@ export default function LocationsPage() {
       />
       
       <Toaster />
-    </>
+    </div>
   );
 } 

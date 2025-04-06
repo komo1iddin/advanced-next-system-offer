@@ -153,7 +153,7 @@ export function LocationsTable({
   const emptyState = (
     <div className="text-center py-8">
       <MapPin className="mx-auto h-12 w-12 text-muted-foreground/50" />
-      <p className="mt-2 text-muted-foreground">No locations found. Add your first province and city.</p>
+      <p className="mt-2 text-muted-foreground">No locations found. Use the "Add Province" or "Add City" buttons above to create locations.</p>
     </div>
   );
 

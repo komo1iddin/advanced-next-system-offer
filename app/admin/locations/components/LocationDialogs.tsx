@@ -41,7 +41,7 @@ export default function LocationDialogs({
 }: LocationDialogsProps) {
   return (
     <>
-      {/* Add Province Modal */}
+      {/* Add Province Modal - removed button trigger since it's handled in page.tsx */}
       <LocationFormModal
         entityType="province"
         mode="create"
@@ -50,28 +50,25 @@ export default function LocationDialogs({
         isSubmitting={dialogs.province.add.isSubmitting}
         open={dialogs.province.add.isOpen}
         onOpenChange={dialogs.province.add.setOpen}
-      >
-        <Button>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Add Province
-        </Button>
-      </LocationFormModal>
+      />
       
-      {/* Add City Modal */}
+      {/* Add City Modal - removed button trigger since it's handled in page.tsx */}
       <LocationFormModal
         entityType="city"
         mode="create"
         provinces={provinces}
-        onSubmit={onAddCity}
+        onSubmit={(data) => {
+          // Ensure data has the correct type for city
+          if ('provinceId' in data) {
+            return onAddCity(data as { name: string; provinceId: string; active: boolean });
+          }
+          // This should never happen since we specified entityType="city"
+          throw new Error("Invalid data format for city");
+        }}
         isSubmitting={dialogs.city.add.isSubmitting}
         open={dialogs.city.add.isOpen}
         onOpenChange={dialogs.city.add.setOpen}
-      >
-        <Button>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Add City
-        </Button>
-      </LocationFormModal>
+      />
       
       {/* Edit Province Modal */}
       {dialogs.province.edit.selected && (
@@ -94,7 +91,14 @@ export default function LocationDialogs({
           mode="edit"
           provinces={provinces}
           initialData={dialogs.city.edit.selected}
-          onSubmit={onUpdateCity}
+          onSubmit={(data) => {
+            // Ensure data has the correct type for city
+            if ('provinceId' in data) {
+              return onUpdateCity(data as { name: string; provinceId: string; active: boolean });
+            }
+            // This should never happen since we specified entityType="city"
+            throw new Error("Invalid data format for city");
+          }}
           isSubmitting={dialogs.city.edit.isSubmitting}
           open={dialogs.city.edit.isOpen}
           onOpenChange={dialogs.city.edit.setOpen}

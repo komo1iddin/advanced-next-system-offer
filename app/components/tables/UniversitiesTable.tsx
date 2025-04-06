@@ -101,14 +101,8 @@ export function UniversitiesTable({
   const emptyState = (
     <div className="flex flex-col items-center justify-center py-6 gap-4">
       <p className="text-muted-foreground text-sm">
-        No universities found
+        No universities found. Use the "Add University" button above to create one.
       </p>
-      <UniversityModal mode="add">
-        <Button variant="outline" size="sm">
-          <Plus className="w-4 h-4 mr-2" />
-          Add University
-        </Button>
-      </UniversityModal>
     </div>
   );
 
