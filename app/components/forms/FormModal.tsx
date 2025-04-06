@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { UseFormReturn, FieldValues } from "react-hook-form";
+import { UseFormReturn, FieldValues, FormProvider } from "react-hook-form";
 import { z } from "zod";
 import { FormBase, FormBaseProps } from "./FormBase";
 import { ModalBase, ModalBaseProps } from "../modals/ModalBase";
@@ -79,7 +79,9 @@ export function FormModal<TFormValues extends FieldValues>({
   
   // Handler for form submission
   const handleSubmit = async (data: TFormValues) => {
-    await onSubmit(data);
+    if (onSubmit) {
+      await onSubmit(data);
+    }
     
     // Auto-close modal if configured
     if (autoCloseOnSuccess && onOpenChange) {

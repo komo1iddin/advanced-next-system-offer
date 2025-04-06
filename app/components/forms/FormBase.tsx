@@ -1,117 +1,100 @@
 "use client";
 
-import React from "react";
-import { useForm, FormProvider, SubmitHandler, UseFormReturn, FieldValues } from "react-hook-form";
+import React, { ReactNode } from "react";
+import { useForm, UseFormReturn, FieldValues, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Button } from "@/components/ui/button";
-import { Form } from "@/components/ui/form";
-import { Loader2 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/app/lib/utils";
 
-export interface FormBaseProps<TFormValues extends FieldValues> {
-  // The schema to validate the form
-  schema: z.ZodType<TFormValues>;
-  
-  // Default values for the form
-  defaultValues?: Partial<TFormValues>;
-  
-  // Callback when form is submitted and validated
-  onSubmit: SubmitHandler<TFormValues>;
-  
-  // Form ID for accessibility
-  id?: string;
-  
-  // Extra classes to apply to the form
+export interface FormBaseProps<TFieldValues extends FieldValues> {
+  /**
+   * Zod schema for form validation
+   */
+  schema: z.ZodType<TFieldValues>;
+
+  /**
+   * Default values for the form
+   */
+  defaultValues?: Partial<TFieldValues>;
+
+  /**
+   * Function called when the form is submitted and validation passes
+   */
+  onSubmit?: (values: TFieldValues) => void | Promise<void>;
+
+  /**
+   * Form render function that receives the form instance
+   */
+  children: (form: UseFormReturn<TFieldValues>) => ReactNode;
+
+  /**
+   * Optional className to apply to the form element
+   */
   className?: string;
-  
-  // Whether the form is currently submitting
-  isSubmitting?: boolean;
-  
-  // Children can be either React nodes or a function that receives form methods
-  children: React.ReactNode | ((form: UseFormReturn<TFormValues>) => React.ReactNode);
-  
-  // Custom submit button text
-  submitText?: string;
-  
-  // Custom cancel action
-  onCancel?: () => void;
-  
-  // Custom cancel button text
-  cancelText?: string;
-  
-  // Whether to show the footer with submit/cancel buttons
+
+  /**
+   * Whether to show the footer or not
+   */
   showFooter?: boolean;
-  
-  // Position of the submit button
-  submitPosition?: "left" | "right";
-  
-  // Additional props
-  [key: string]: any;
+
+  /**
+   * Whether the form is currently submitting
+   */
+  isSubmitting?: boolean;
+
+  /**
+   * Function called when form cancel action is triggered
+   */
+  onCancel?: () => void;
+
+  /**
+   * Text for the submit button
+   */
+  submitText?: string;
+
+  /**
+   * Text for the cancel button
+   */
+  cancelText?: string;
 }
 
-export function FormBase<TFormValues extends FieldValues>({
+/**
+ * FormBase component provides form state management and validation
+ * using react-hook-form and zod
+ */
+export function FormBase<TFieldValues extends FieldValues>({
   schema,
   defaultValues,
   onSubmit,
-  id,
-  className,
-  isSubmitting = false,
   children,
-  submitText = "Submit",
-  onCancel,
-  cancelText = "Cancel",
+  className,
   showFooter = true,
-  submitPosition = "right",
-  ...props
-}: FormBaseProps<TFormValues>) {
-  const form = useForm<TFormValues>({
+  isSubmitting = false,
+  onCancel,
+  submitText = "Submit",
+  cancelText = "Cancel",
+}: FormBaseProps<TFieldValues>) {
+  const form = useForm<TFieldValues>({
     resolver: zodResolver(schema),
     defaultValues: defaultValues as any,
   });
-  
-  const handleSubmit = async (data: TFormValues) => {
-    await onSubmit(data);
+
+  const handleSubmit = async (data: TFieldValues) => {
+    try {
+      await onSubmit?.(data);
+    } catch (error) {
+      console.error("Form submission error:", error);
+    }
   };
-  
+
   return (
-    <Form {...form}>
-      <form 
-        id={id} 
-        className={cn("space-y-6", className)} 
-        onSubmit={form.handleSubmit(handleSubmit)}
-        {...props}
+    <FormProvider {...form}>
+      <form
+        className={cn("space-y-6", className)}
+        onSubmit={onSubmit ? form.handleSubmit(handleSubmit) : undefined}
       >
-        {typeof children === "function" ? children(form) : children}
-        
-        {showFooter && (
-          <div className={cn(
-            "flex gap-3 pt-3", 
-            submitPosition === "right" ? "justify-end" : "justify-start"
-          )}>
-            {onCancel && (
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={onCancel}
-                disabled={isSubmitting}
-              >
-                {cancelText}
-              </Button>
-            )}
-            
-            <Button 
-              type="submit" 
-              disabled={isSubmitting}
-            >
-              {isSubmitting && (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              )}
-              {submitText}
-            </Button>
-          </div>
-        )}
+        {children(form)}
       </form>
-    </Form>
+    </FormProvider>
   );
 } 
