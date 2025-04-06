@@ -1,7 +1,17 @@
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import prisma from "./prisma";
 import { compare } from "bcrypt";
+
+// Simple in-memory user store (replace with your preferred database solution)
+const users = [
+  {
+    id: "1",
+    email: "komo1iddin.pro@gmail.com",
+    password: "bilmadim", // password: "password123"
+    name: "Admin User",
+    role: "admin" // Added role field
+  },
+];
 
 export const authOptions: NextAuthOptions = {
   pages: {
@@ -26,13 +36,15 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
 
-        const user = await prisma.user.findUnique({
-          where: {
-            email: credentials.email,
-          },
-        });
+        const user = users.find((user) => user.email === credentials.email);
+        
+        if (!user) {
+          return null;
+        }
 
-        if (!user || !(await compare(credentials.password, user.password))) {
+        const isPasswordValid = await compare(credentials.password, user.password);
+        
+        if (!isPasswordValid) {
           return null;
         }
 
@@ -40,7 +52,7 @@ export const authOptions: NextAuthOptions = {
           id: user.id,
           email: user.email,
           name: user.name,
-          role: user.role,
+          role: user.role // Include role in the returned user object
         };
       },
     }),
@@ -52,17 +64,16 @@ export const authOptions: NextAuthOptions = {
         user: {
           ...session.user,
           id: token.id,
-          role: token.role,
+          role: token.role // Include role in the session
         },
       };
     },
     jwt: ({ token, user }) => {
       if (user) {
-        const u = user as unknown as any;
         return {
           ...token,
-          id: u.id,
-          role: u.role,
+          id: user.id,
+          role: user.role // Include role in the JWT token
         };
       }
       return token;

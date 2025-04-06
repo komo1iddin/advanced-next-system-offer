@@ -1,79 +1,55 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectToDatabase from '@/lib/mongodb';
-import StudyOffer from '@/lib/models/StudyOffer';
-import { getServerSession } from 'next-auth/next';
-import { generateUniqueId } from '@/lib/generateUniqueId';
+import { StudyOfferService } from '@/lib/services/StudyOfferService';
+import { errorHandler } from '@/lib/utils/error';
+import { createStudyOfferSchema, getStudyOffersSchema } from '@/lib/validators/studyOffer.validator';
+import { requireAdmin } from '@/lib/middleware/auth';
+import { defaultRateLimit } from '@/lib/middleware/rateLimit';
+
+const studyOfferService = new StudyOfferService();
 
 // GET all study offers
 export async function GET(req: NextRequest) {
   try {
-    // Parse query parameters
+    // Apply rate limiting
+    await defaultRateLimit(req);
+
     const url = new URL(req.url);
-    const category = url.searchParams.get('category');
-    const degreeLevel = url.searchParams.get('degreeLevel');
-    const searchQuery = url.searchParams.get('search');
-    const uniqueId = url.searchParams.get('uniqueId');
-    const featured = url.searchParams.get('featured');
-    const limit = parseInt(url.searchParams.get('limit') || '50');
-    const page = parseInt(url.searchParams.get('page') || '1');
-    const skip = (page - 1) * limit;
-
-    // Connect to the database
-    await connectToDatabase();
-
-    // Build the query
-    let query: any = {};
+    const params = Object.fromEntries(url.searchParams.entries());
     
-    if (category) {
-      query.category = category;
-    }
+    // Validate query parameters
+    const validatedParams = getStudyOffersSchema.parse(params);
     
-    if (degreeLevel) {
-      query.degreeLevel = degreeLevel;
-    }
-    
-    if (featured === 'true') {
-      query.featured = true;
-    }
-    
-    // If uniqueId is provided, search for exact match
-    if (uniqueId) {
-      query.uniqueId = uniqueId;
-    }
-    // Otherwise handle general search
-    else if (searchQuery) {
-      query.$or = [
-        { title: { $regex: searchQuery, $options: 'i' } },
-        { description: { $regex: searchQuery, $options: 'i' } },
-        { universityName: { $regex: searchQuery, $options: 'i' } },
-        { uniqueId: { $regex: searchQuery, $options: 'i' } }, // Add search by uniqueId
-        { tags: { $in: [new RegExp(searchQuery, 'i')] } },
+    // Build filters
+    const filters: any = {};
+    if (validatedParams.category) filters.category = validatedParams.category;
+    if (validatedParams.degreeLevel) filters.degreeLevel = validatedParams.degreeLevel;
+    if (validatedParams.featured === 'true') filters.featured = true;
+    if (validatedParams.uniqueId) filters.uniqueId = validatedParams.uniqueId;
+    if (validatedParams.search) {
+      filters.$or = [
+        { title: { $regex: validatedParams.search, $options: 'i' } },
+        { description: { $regex: validatedParams.search, $options: 'i' } },
+        { universityName: { $regex: validatedParams.search, $options: 'i' } },
+        { uniqueId: { $regex: validatedParams.search, $options: 'i' } },
+        { tags: { $in: [new RegExp(validatedParams.search, 'i')] } },
       ];
     }
 
-    // Execute the query
-    const offers = await StudyOffer.find(query)
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit);
-      
-    const total = await StudyOffer.countDocuments(query);
+    const result = await studyOfferService.getOffers(
+      filters,
+      validatedParams.page,
+      validatedParams.limit
+    );
 
     return NextResponse.json({
       success: true,
-      data: offers,
-      pagination: {
-        total,
-        page,
-        limit,
-        pages: Math.ceil(total / limit)
-      }
+      ...result
     });
   } catch (error) {
-    console.error('Error fetching study offers:', error);
+    const errorResponse = errorHandler(error);
     return NextResponse.json(
-      { success: false, error: 'Failed to fetch study offers' },
-      { status: 500 }
+      { success: false, error: errorResponse.error },
+      { status: errorResponse.statusCode }
     );
   }
 }
@@ -81,64 +57,26 @@ export async function GET(req: NextRequest) {
 // POST a new study offer
 export async function POST(req: NextRequest) {
   try {
-    // Check if user is authenticated and has admin privileges
-    const session = await getServerSession();
-    
-    if (!session || !session.user || session.user.role !== 'admin') {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized access' },
-        { status: 403 }
-      );
-    }
-    
-    // Connect to the database
-    await connectToDatabase();
-    
-    // Parse the request body
+    // Apply rate limiting and check admin access
+    await defaultRateLimit(req);
+    await requireAdmin(req);
+
+    // Parse and validate request body
     const data = await req.json();
-    
-    // Generate a unique ID based on the degree level and ensure it's unique
-    let uniqueId = generateUniqueId(data.degreeLevel);
-    let isUnique = false;
-    let maxAttempts = 5;  // Limit the number of attempts to prevent infinite loops
-    
-    // Check if the generated ID already exists and regenerate if necessary
-    while (!isUnique && maxAttempts > 0) {
-      const existingOffer = await StudyOffer.findOne({ uniqueId });
-      if (!existingOffer) {
-        isUnique = true;
-      } else {
-        uniqueId = generateUniqueId(data.degreeLevel);
-        maxAttempts--;
-      }
-    }
-    
-    // If we couldn't generate a unique ID after several attempts, return an error
-    if (!isUnique) {
-      return NextResponse.json(
-        { success: false, error: 'Failed to generate a unique ID' },
-        { status: 500 }
-      );
-    }
-    
-    // Add the unique ID to the data
-    const offerData = {
-      ...data,
-      uniqueId
-    };
-    
-    // Create a new study offer
-    const newOffer = await StudyOffer.create(offerData);
-    
+    const validatedData = createStudyOfferSchema.parse(data);
+
+    // Create new offer
+    const newOffer = await studyOfferService.createOffer(validatedData);
+
     return NextResponse.json(
       { success: true, data: newOffer },
       { status: 201 }
     );
   } catch (error) {
-    console.error('Error creating study offer:', error);
+    const errorResponse = errorHandler(error);
     return NextResponse.json(
-      { success: false, error: 'Failed to create study offer' },
-      { status: 500 }
+      { success: false, error: errorResponse.error },
+      { status: errorResponse.statusCode }
     );
   }
 } 

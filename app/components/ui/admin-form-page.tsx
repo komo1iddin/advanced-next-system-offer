@@ -14,7 +14,7 @@ import { useRouter } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { z } from "zod";
-import { UseFormReturn, FieldValues } from "react-hook-form";
+import { UseFormReturn, FieldValues, FormProvider } from "react-hook-form";
 
 export interface AdminFormPageProps<TFormValues extends FieldValues> {
   /** The title shown in the admin page header */
@@ -109,29 +109,31 @@ export function AdminFormPage<TFormValues extends FieldValues>({
         className={cn("max-w-3xl mx-auto", className)}
       >
         {(form) => (
-          <FormCard
-            title={formTitle || title}
-            description={formDescription}
-            footer={
-              <div className="flex gap-3">
-                <Button 
-                  variant="outline" 
-                  onClick={handleCancel}
-                  disabled={isSubmitting}
-                >
-                  {cancelText}
-                </Button>
-                <Button 
-                  type="submit"
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? "Saving..." : submitText}
-                </Button>
-              </div>
-            }
-          >
-            {typeof children === 'function' ? children(form) : children}
-          </FormCard>
+          <FormProvider {...form}>
+            <FormCard
+              title={formTitle || title}
+              description={formDescription}
+              footer={
+                <div className="flex gap-3">
+                  <Button 
+                    variant="outline" 
+                    onClick={handleCancel}
+                    disabled={isSubmitting}
+                  >
+                    {cancelText}
+                  </Button>
+                  <Button 
+                    type="submit"
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? "Saving..." : submitText}
+                  </Button>
+                </div>
+              }
+            >
+              {typeof children === 'function' ? children(form) : children}
+            </FormCard>
+          </FormProvider>
         )}
       </FormBase>
     </AdminPageLayout>

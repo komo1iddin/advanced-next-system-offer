@@ -1,43 +1,86 @@
 import { z } from "zod";
 
 /**
- * Common validation patterns for forms using Zod
- * This library provides reusable validation schemas for common form fields
+ * ==== Common Validation Patterns ====
  */
 
-// ===== Text Fields =====
+// String validations
+export const requiredString = (message = "This field is required") =>
+  z.string().min(1, { message });
 
-/**
- * Required string validation with custom error message
- */
-export const requiredString = (errorMessage: string = "This field is required") =>
-  z.string().min(1, { message: errorMessage });
+export const stringWithLength = (
+  min: number,
+  max: number,
+  minMessage = `Must be at least ${min} characters`,
+  maxMessage = `Must be at most ${max} characters`
+) => z.string().min(min, { message: minMessage }).max(max, { message: maxMessage });
 
-/**
- * Optional string validation
- */
 export const optionalString = () => z.string().optional();
 
-/**
- * String with minimum and maximum length
- */
-export const stringWithLength = (
-  min: number = 0, 
-  max: number = 255, 
-  minMessage?: string, 
-  maxMessage?: string
-) => 
-  z.string()
-    .min(min, { message: minMessage || `Must be at least ${min} characters` })
-    .max(max, { message: maxMessage || `Cannot exceed ${max} characters` });
+// Email validation
+export const email = (message = "Invalid email address") =>
+  z.string().email({ message });
 
-// ===== Email Validation =====
+// URL validation
+export const url = (message = "Invalid URL") =>
+  z.string().url({ message });
+
+// Phone number validation (basic pattern)
+export const phoneNumber = (message = "Invalid phone number") =>
+  z.string().regex(/^\+?[0-9\s\-\(\)]{8,20}$/, { message });
+
+// MongoDB ID validation (24 character hex string)
+export const mongoId = (message = "Invalid ID") =>
+  z.string().min(24, { message }).max(24, { message });
 
 /**
- * Email validation
+ * ==== Entity Schemas ====
  */
-export const email = (errorMessage: string = "Invalid email address") =>
-  z.string().email({ message: errorMessage });
+
+// Active status schema (common for most entities)
+export const activeStatusSchema = z.object({
+  active: z.boolean(),
+});
+
+/**
+ * ==== University Schemas ====
+ */
+
+/**
+ * University basic info schema
+ */
+export const universityBasicInfoSchema = z.object({
+  name: requiredString("University name is required"),
+  shortName: stringWithLength(1, 30, "Short name is required", "Short name is too long"),
+  description: optionalString(),
+  cityId: mongoId("City is required"),
+  website: url("Website URL must be valid").optional(),
+  active: z.boolean(),
+});
+
+/**
+ * University contact info schema
+ */
+export const universityContactSchema = z.object({
+  email: email("Email address must be valid"),
+  phone: phoneNumber("Phone number must be valid"),
+  address: requiredString("Address is required"),
+});
+
+/**
+ * Complete university schema
+ */
+export const universitySchema = z.object({
+  name: requiredString("University name is required"),
+  shortName: stringWithLength(1, 30, "Short name is required", "Short name is too long"),
+  description: optionalString(),
+  cityId: mongoId("City is required"),
+  website: url("Website URL must be valid").optional(),
+  email: email("Email address must be valid"),
+  phone: phoneNumber("Phone number must be valid"),
+  address: requiredString("Address is required"),
+  active: z.boolean(),
+});
 
 // ===== Numbers =====
 
@@ -122,26 +165,12 @@ export const nonEmptyArray = <T extends z.ZodTypeAny>(
 ) =>
   z.array(schema).min(1, { message: errorMessage });
 
-// ===== IDs and References =====
-
-/**
- * MongoDB ID validation
- */
-export const mongoId = (errorMessage: string = "Invalid ID format") =>
-  z.string().min(1, { message: errorMessage });
-
 // ===== Special Types =====
-
-/**
- * URL validation
- */
-export const url = (errorMessage: string = "Invalid URL format") =>
-  z.string().url({ message: errorMessage });
 
 /**
  * Phone number validation (simple pattern)
  */
-export const phoneNumber = (errorMessage: string = "Invalid phone number format") =>
+export const phoneNumberSimple = (errorMessage: string = "Invalid phone number format") =>
   z.string().regex(/^\+?[0-9\s\-()]+$/, { message: errorMessage });
 
 // ===== Common Entity Schemas =====
@@ -151,13 +180,6 @@ export const phoneNumber = (errorMessage: string = "Invalid phone number format"
  */
 export const baseEntitySchema = z.object({
   _id: mongoId(),
-});
-
-/**
- * Active status schema
- */
-export const activeStatusSchema = z.object({
-  active: z.boolean().default(true),
 });
 
 // ===== Location Schemas =====
@@ -177,44 +199,6 @@ export const citySchema = z.object({
   name: requiredString("City name is required"),
   provinceId: mongoId("Province is required"),
   active: z.boolean(),
-});
-
-// ===== University Schemas =====
-
-/**
- * University basic info schema
- */
-export const universityBasicInfoSchema = z.object({
-  name: requiredString("University name is required"),
-  shortName: stringWithLength(1, 30, "Short name is required", "Short name is too long"),
-  description: optionalString(),
-  cityId: mongoId("City is required"),
-  website: url("Website URL must be valid").optional(),
-  active: z.boolean().default(true),
-});
-
-/**
- * University contact info schema
- */
-export const universityContactSchema = z.object({
-  email: email("Email address must be valid"),
-  phone: phoneNumber("Phone number must be valid"),
-  address: requiredString("Address is required"),
-});
-
-/**
- * Complete university schema
- */
-export const universitySchema = z.object({
-  name: requiredString("University name is required"),
-  shortName: stringWithLength(1, 30, "Short name is required", "Short name is too long"),
-  description: optionalString(),
-  cityId: mongoId("City is required"),
-  website: url("Website URL must be valid").optional(),
-  email: email("Email address must be valid"),
-  phone: phoneNumber("Phone number must be valid"),
-  address: requiredString("Address is required"),
-  active: z.boolean().default(true),
 });
 
 // ===== Agent Schemas =====
@@ -316,7 +300,7 @@ export const offerSchema = z.object({
  */
 export const tagSchema = z.object({
   name: requiredString("Tag name is required"),
-  active: z.boolean().default(true),
+  active: z.boolean(),
 });
 
 // ===== User Schemas =====

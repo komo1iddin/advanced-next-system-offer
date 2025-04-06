@@ -1,119 +1,78 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectToDatabase from '@/lib/mongodb';
-import StudyOffer from '@/lib/models/StudyOffer';
+import { StudyOfferService } from '@/lib/services/StudyOfferService';
+import { errorHandler } from '@/lib/utils/error';
+import { updateStudyOfferSchema } from '@/lib/validators/studyOffer.validator';
+import { requireAdmin } from '@/lib/middleware/auth';
+import { defaultRateLimit } from '@/lib/middleware/rateLimit';
 
-interface Params {
-  params: {
-    id: string;
-  }
-}
+const studyOfferService = new StudyOfferService();
 
-// GET a specific study offer by ID
-export async function GET(req: NextRequest, { params }: Params) {
+// GET a single study offer
+export async function GET(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
-    const { id } = params;
-    
-    // Connect to the database
-    await connectToDatabase();
-    
-    // Find the offer by ID
-    const offer = await StudyOffer.findById(id);
-    
-    if (!offer) {
-      return NextResponse.json(
-        { success: false, error: 'Study offer not found' },
-        { status: 404 }
-      );
-    }
-    
+    // Apply rate limiting
+    await defaultRateLimit(req);
+
+    const offer = await studyOfferService.getOfferById(params.id);
     return NextResponse.json({ success: true, data: offer });
   } catch (error) {
-    console.error('Error fetching study offer:', error);
+    const errorResponse = errorHandler(error);
     return NextResponse.json(
-      { success: false, error: 'Failed to fetch study offer' },
-      { status: 500 }
+      { success: false, error: errorResponse.error },
+      { status: errorResponse.statusCode }
     );
   }
 }
 
-// PUT (update) a specific study offer by ID
-export async function PUT(req: NextRequest, { params }: Params) {
+// UPDATE a study offer
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
-    const { id } = params;
-    
-    // Connect to the database
-    await connectToDatabase();
-    
-    // Parse the request body
+    // Apply rate limiting and check admin access
+    await defaultRateLimit(req);
+    await requireAdmin(req);
+
+    // Parse and validate request body
     const data = await req.json();
-    
-    // Find the current offer to get its uniqueId
-    const currentOffer = await StudyOffer.findById(id);
-    
-    if (!currentOffer) {
-      return NextResponse.json(
-        { success: false, error: 'Study offer not found' },
-        { status: 404 }
-      );
-    }
-    
-    // Ensure uniqueId is preserved and cannot be modified
-    const updateData = {
-      ...data,
-      uniqueId: currentOffer.uniqueId, // Preserve the original uniqueId
-      updatedAt: new Date()
-    };
-    
-    // Find and update the offer
-    const updatedOffer = await StudyOffer.findByIdAndUpdate(
-      id,
-      updateData,
-      { new: true, runValidators: true }
-    );
-    
-    if (!updatedOffer) {
-      return NextResponse.json(
-        { success: false, error: 'Study offer not found' },
-        { status: 404 }
-      );
-    }
-    
+    const validatedData = updateStudyOfferSchema.parse(data);
+
+    // Update offer
+    const updatedOffer = await studyOfferService.updateOffer(params.id, validatedData);
+
     return NextResponse.json({ success: true, data: updatedOffer });
   } catch (error) {
-    console.error('Error updating study offer:', error);
+    const errorResponse = errorHandler(error);
     return NextResponse.json(
-      { success: false, error: 'Failed to update study offer' },
-      { status: 500 }
+      { success: false, error: errorResponse.error },
+      { status: errorResponse.statusCode }
     );
   }
 }
 
-// DELETE a specific study offer by ID
-export async function DELETE(req: NextRequest, { params }: Params) {
+// DELETE a study offer
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
-    const { id } = params;
-    
-    // Connect to the database
-    await connectToDatabase();
-    
-    // Find and delete the offer
-    const deletedOffer = await StudyOffer.findByIdAndDelete(id);
-    
-    if (!deletedOffer) {
-      return NextResponse.json(
-        { success: false, error: 'Study offer not found' },
-        { status: 404 }
-      );
-    }
-    
-    return NextResponse.json(
-      { success: true, message: 'Study offer deleted successfully' }
-    );
+    // Apply rate limiting and check admin access
+    await defaultRateLimit(req);
+    await requireAdmin(req);
+
+    // Delete offer
+    await studyOfferService.deleteOffer(params.id);
+
+    return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error deleting study offer:', error);
+    const errorResponse = errorHandler(error);
     return NextResponse.json(
-      { success: false, error: 'Failed to delete study offer' },
-      { status: 500 }
+      { success: false, error: errorResponse.error },
+      { status: errorResponse.statusCode }
     );
   }
 } 

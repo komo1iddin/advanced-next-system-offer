@@ -24,5 +24,8 @@ export {
 // Export validation patterns
 export * as validation from './validation';
 
+// Export form templates
+export * from './templates';
+
 // This allows importing like:
-// import { FormBase, FormModal, useFormMode, FormRow } from '@/app/components/forms'; 
+// import { FormBase, FormModal, useFormMode, FormRow, TagFormTemplate } from '@/app/components/forms'; 
