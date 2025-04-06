@@ -7,6 +7,9 @@ export { useFormMode } from './useFormMode';
 export { default as FormTextField } from './fields/FormTextField';
 export { default as FormSelectField } from './fields/FormSelectField';
 export { default as FormSwitchField } from './fields/FormSwitchField';
+export { default as FormDateField } from './fields/FormDateField';
+export { default as FormTextareaField } from './fields/FormTextareaField';
+export { default as FormFileField } from './fields/FormFileField';
 
 // Export layout components
 export { 
