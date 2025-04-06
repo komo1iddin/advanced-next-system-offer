@@ -437,3 +437,142 @@ For examples, see:
 - `app/admin/locations/components/CityForm.tsx` - Using form field components
 - `app/admin/locations/components/ProvinceForm.tsx` - Using form field components
 - `app/admin/locations/components/LocationFormModal.tsx` - Using validation library 
+
+## Form Layout Components
+
+The standardized form system includes several layout components to help structure forms consistently:
+
+### FormSection
+
+`FormSection` groups related form fields with an optional title and description.
+
+```tsx
+import { FormSection } from '@/app/components/forms';
+
+<FormSection 
+  title="Contact Information" 
+  description="Please provide your contact details" 
+  showDivider
+>
+  <FormTextField name="email" label="Email" />
+  <FormTextField name="phone" label="Phone" />
+</FormSection>
+```
+
+**Props:**
+- `title`: Optional title for the section
+- `description`: Optional descriptive text
+- `children`: Form fields or other content
+- `className`: Additional CSS classes
+- `showDivider`: Whether to show a divider above the section (default: false)
+
+### FormRow
+
+`FormRow` creates responsive horizontal layouts for form fields.
+
+```tsx
+import { FormRow, FormTextField } from '@/app/components/forms';
+
+<FormRow columns={2}>
+  <FormTextField name="firstName" label="First Name" />
+  <FormTextField name="lastName" label="Last Name" />
+</FormRow>
+```
+
+**Props:**
+- `children`: Form fields or other content
+- `className`: Additional CSS classes
+- `mobileColumns`: Number of columns on mobile devices (1 or 2, default: 1)
+- `columns`: Number of columns on desktop (1-4, default: 2)
+- `gap`: Space between columns ('small', 'medium', 'large', default: 'medium')
+
+### FormCard
+
+`FormCard` wraps form sections in a card UI with a title and optional footer.
+
+```tsx
+import { FormCard, FormTextField, FormSection } from '@/app/components/forms';
+import { Button } from '@/components/ui/button';
+
+<FormCard 
+  title="User Profile" 
+  description="Update your profile information"
+  footer={
+    <>
+      <Button variant="outline">Cancel</Button>
+      <Button type="submit">Save Changes</Button>
+    </>
+  }
+>
+  <FormSection title="Basic Information">
+    <FormTextField name="name" label="Full Name" />
+    <FormTextField name="email" label="Email Address" />
+  </FormSection>
+</FormCard>
+```
+
+**Props:**
+- `title`: Optional card title
+- `description`: Optional description text
+- `children`: Card content (form fields)
+- `footer`: Optional footer content (usually buttons)
+- `className`: Additional CSS classes for the Card
+- `contentClassName`: Additional CSS classes for the CardContent
+
+### FormDivider
+
+`FormDivider` adds a horizontal divider with an optional label.
+
+```tsx
+import { FormDivider } from '@/app/components/forms';
+
+<FormDivider label="Optional Information" spacing="large" />
+```
+
+**Props:**
+- `label`: Optional text to display in the middle of the divider
+- `className`: Additional CSS classes
+- `spacing`: Vertical spacing around the divider ('small', 'medium', 'large', default: 'medium')
+
+### FormSpacer
+
+`FormSpacer` adds consistent vertical spacing between form elements.
+
+```tsx
+import { FormSpacer } from '@/app/components/forms';
+
+<FormTextField name="name" label="Name" />
+<FormSpacer size="large" />
+<FormTextField name="email" label="Email" />
+```
+
+**Props:**
+- `size`: Size of the spacer ('small', 'medium', 'large', default: 'medium')
+- `className`: Additional CSS classes
+
+### FormHelperText
+
+`FormHelperText` displays standardized help text beneath form fields.
+
+```tsx
+import { FormHelperText } from '@/app/components/forms';
+
+<FormTextField name="password" label="Password" type="password" />
+<FormHelperText variant="tip">
+  Password should be at least 8 characters and include a number
+</FormHelperText>
+```
+
+**Props:**
+- `children`: Text content to display
+- `variant`: Type of helper text ('info', 'tip', 'warning', default: 'info')
+- `showIcon`: Whether to show an icon next to the text (default: true)
+- `className`: Additional CSS classes
+
+## Layout Best Practices
+
+- Use `FormSection` to group related fields and provide context
+- Use `FormRow` for fields that logically belong together (first/last name, city/state/zip)
+- Use `FormCard` for major form sections or standalone forms
+- Use `FormDivider` to separate distinct sections of a form
+- Use `FormHelperText` to provide guidance on complex fields 
