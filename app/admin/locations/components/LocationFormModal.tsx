@@ -1,19 +1,9 @@
 "use client";
 
-import { z } from "zod";
-import { FormModal } from "@/app/components/forms";
-import { 
-  FormControl, 
-  FormField, 
-  FormItem, 
-  FormLabel, 
-  FormMessage 
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { FormModal, validation, FormTextField, FormSelectField, FormSwitchField } from "@/app/components/forms";
 import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
+import { z } from "zod";
 
 export interface Province {
   _id: string;
@@ -31,21 +21,11 @@ export interface City {
   active: boolean;
 }
 
-// Province form schemas and types
-const provinceSchema = z.object({
-  name: z.string().min(1, "Province name is required"),
-  active: z.boolean(),
-});
-
+// Use the validation library for schemas
+const provinceSchema = validation.provinceSchema;
 type ProvinceFormValues = z.infer<typeof provinceSchema>;
 
-// City form schemas and types
-const citySchema = z.object({
-  name: z.string().min(1, "City name is required"),
-  provinceId: z.string().min(1, "Province is required"),
-  active: z.boolean(),
-});
-
+const citySchema = validation.citySchema;
 type CityFormValues = z.infer<typeof citySchema>;
 
 // Types of location entity
@@ -111,6 +91,12 @@ export function LocationFormModal({
     active: (initialData as City)?.active ?? true
   };
   
+  // Format provinces for the select field
+  const provinceOptions = provinces.map(province => ({
+    value: province._id,
+    label: province.name
+  }));
+  
   if (entityType === "province") {
     return (
       <FormModal<ProvinceFormValues>
@@ -124,42 +110,19 @@ export function LocationFormModal({
         onOpenChange={onOpenChange}
         renderForm={(form) => (
           <>
-            <FormField
-              control={form.control}
+            <FormTextField
               name="name"
-              render={({ field }) => (
-                <FormItem className="space-y-2">
-                  <FormLabel>
-                    Province/State Name <span className="text-red-500">*</span>
-                  </FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="e.g. Zhejiang, Jiangsu, Shanghai"
-                      disabled={isSubmitting}
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+              label="Province/State Name"
+              placeholder="e.g. Zhejiang, Jiangsu, Shanghai"
+              required
+              disabled={isSubmitting}
             />
             
             {mode === "edit" && (
-              <FormField
-                control={form.control}
+              <FormSwitchField
                 name="active"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-center space-x-2 mt-4">
-                    <FormControl>
-                      <Switch
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                        disabled={isSubmitting}
-                      />
-                    </FormControl>
-                    <FormLabel className="!mt-0">Active</FormLabel>
-                  </FormItem>
-                )}
+                label="Active"
+                disabled={isSubmitting}
               />
             )}
           </>
@@ -187,73 +150,28 @@ export function LocationFormModal({
       onOpenChange={onOpenChange}
       renderForm={(form) => (
         <>
-          <FormField
-            control={form.control}
+          <FormTextField
             name="name"
-            render={({ field }) => (
-              <FormItem className="space-y-2">
-                <FormLabel>
-                  City Name <span className="text-red-500">*</span>
-                </FormLabel>
-                <FormControl>
-                  <Input
-                    placeholder="e.g. Shanghai, Hangzhou, Suzhou"
-                    disabled={isSubmitting}
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
+            label="City Name"
+            placeholder="e.g. Shanghai, Hangzhou, Suzhou"
+            required
+            disabled={isSubmitting}
           />
           
-          <FormField
-            control={form.control}
+          <FormSelectField
             name="provinceId"
-            render={({ field }) => (
-              <FormItem className="space-y-2">
-                <FormLabel>
-                  Province <span className="text-red-500">*</span>
-                </FormLabel>
-                <Select
-                  disabled={isSubmitting}
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a province" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {provinces.map((province) => (
-                      <SelectItem key={province._id} value={province._id}>
-                        {province.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
+            label="Province"
+            placeholder="Select a province"
+            options={provinceOptions}
+            required
+            disabled={isSubmitting}
           />
           
           {mode === "edit" && (
-            <FormField
-              control={form.control}
+            <FormSwitchField
               name="active"
-              render={({ field }) => (
-                <FormItem className="flex flex-row items-center space-x-2 mt-4">
-                  <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                      disabled={isSubmitting}
-                    />
-                  </FormControl>
-                  <FormLabel className="!mt-0">Active</FormLabel>
-                </FormItem>
-              )}
+              label="Active"
+              disabled={isSubmitting}
             />
           )}
         </>

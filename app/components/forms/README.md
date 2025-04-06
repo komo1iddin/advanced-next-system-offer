@@ -11,6 +11,7 @@ The system consists of:
 3. **FormModal**: A combination of FormBase and ModalBase for the common pattern of forms within modals
 4. **useFormMode**: A utility hook for handling consistent text and behavior for create/edit forms
 5. **Standardized Form Fields**: Reusable form field components for common input types
+6. **Validation Library**: Reusable validation patterns and schemas using Zod
 
 ## Components
 
@@ -271,6 +272,40 @@ import { FormSwitchField } from "@/app/components/forms";
 />
 ```
 
+### Validation Library
+
+A comprehensive library of reusable validation patterns using Zod for consistent form validation.
+
+**Basic Usage:**
+
+```tsx
+import { validation } from "@/app/components/forms";
+import { z } from "zod";
+
+// Define schema using validation helpers
+const userSchema = z.object({
+  name: validation.requiredString("Name is required"),
+  email: validation.email(),
+  age: validation.numberWithRange(18, 120, "Must be at least 18 years old"),
+  website: validation.url().optional(),
+});
+
+// Use with FormBase or FormModal
+function UserForm() {
+  return (
+    <FormBase
+      schema={userSchema}
+      defaultValues={{ name: "", email: "", age: 30 }}
+      onSubmit={handleSubmit}
+    >
+      {/* Form fields */}
+    </FormBase>
+  );
+}
+```
+
+For more details about the validation library, see the [validation README](./validation/README.md).
+
 ### useFormMode
 
 A utility hook for handling consistent text and behavior for create/edit forms.
@@ -305,34 +340,37 @@ function MyForm({ mode = "create" }) {
 
 2. **Use Standardized Form Fields**: Whenever possible, use the pre-built form field components for consistent styling and behavior.
 
-3. **Consistent Schema Validation**: Always use zod schemas for form validation to ensure consistent error messages.
+3. **Use Validation Library**: Use the validation library for all form validations to ensure consistent error messages and validation rules.
 
-4. **Controlled State Management**: For complex forms, consider controlling the form state externally (e.g., with React Query mutations).
+4. **Consistent Schema Validation**: Always use zod schemas for form validation to ensure consistent error messages.
 
-5. **Responsive Sizing**: Use the appropriate size prop based on the form complexity.
+5. **Controlled State Management**: For complex forms, consider controlling the form state externally (e.g., with React Query mutations).
 
-6. **Error Handling**: Always handle form submission errors and display them to the user.
+6. **Responsive Sizing**: Use the appropriate size prop based on the form complexity.
 
-7. **Field Organization**: Group related fields together and use consistent spacing between field groups.
+7. **Error Handling**: Always handle form submission errors and display them to the user.
 
-## Simplified Usage with Standardized Fields
+8. **Field Organization**: Group related fields together and use consistent spacing between field groups.
 
-Using the standardized form fields significantly reduces boilerplate:
+## Simplified Usage with Standardized Fields and Validation
+
+Using standardized form fields and validation library significantly reduces boilerplate:
 
 ```tsx
 import { 
   FormBase, 
   FormTextField, 
   FormSelectField, 
-  FormSwitchField 
+  FormSwitchField,
+  validation 
 } from "@/app/components/forms";
 import { z } from "zod";
 
-// Define schema with zod
+// Define schema with validation library
 const formSchema = z.object({
-  name: z.string().min(2, "Name is required"),
-  email: z.string().email("Invalid email format"),
-  role: z.string().min(1, "Role is required"),
+  name: validation.requiredString("Name is required"),
+  email: validation.email("Invalid email format"),
+  role: validation.requiredString("Role is required"),
   active: z.boolean()
 });
 
@@ -395,7 +433,7 @@ export function UserForm() {
 ## Examples
 
 For examples, see:
-- `app/components/modals/UniversityModal.tsx`
-- `app/admin/locations/components/CityForm.tsx`
-- `app/admin/locations/components/ProvinceForm.tsx`
-- `app/admin/locations/components/LocationFormModal.tsx` 
+- `app/components/modals/UniversityModal.tsx` - Form modal implementation
+- `app/admin/locations/components/CityForm.tsx` - Using form field components
+- `app/admin/locations/components/ProvinceForm.tsx` - Using form field components
+- `app/admin/locations/components/LocationFormModal.tsx` - Using validation library 

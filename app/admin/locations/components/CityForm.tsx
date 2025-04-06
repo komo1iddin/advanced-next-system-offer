@@ -1,16 +1,17 @@
 "use client";
 
-import { z } from "zod";
 import { 
   FormBase, 
   FormTextField, 
   FormSelectField, 
-  FormSwitchField 
+  FormSwitchField,
+  validation
 } from "@/app/components/forms";
 import { DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import { UseFormReturn } from "react-hook-form";
+import { z } from "zod";
 
 export interface Province {
   _id: string;
@@ -36,13 +37,8 @@ export interface CityFormProps {
   isSubmitting?: boolean;
 }
 
-// Define the validation schema
-const formSchema = z.object({
-  name: z.string().min(1, "City name is required"),
-  provinceId: z.string().min(1, "Province is required"),
-  active: z.boolean(),
-});
-
+// Use the validation library schema
+const formSchema = validation.citySchema;
 type FormValues = z.infer<typeof formSchema>;
 
 export default function CityForm({

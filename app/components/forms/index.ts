@@ -8,5 +8,8 @@ export { default as FormTextField } from './fields/FormTextField';
 export { default as FormSelectField } from './fields/FormSelectField';
 export { default as FormSwitchField } from './fields/FormSwitchField';
 
+// Export validation patterns
+export * as validation from './validation';
+
 // This allows importing like:
 // import { FormBase, FormModal, useFormMode } from '@/app/components/forms'; 
