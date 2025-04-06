@@ -2,6 +2,7 @@ import mongoose, { Schema, Document } from 'mongoose';
 
 // Define interface for the StudyOffer document
 export interface IStudyOffer extends Document {
+  uniqueId: string;
   title: string;
   universityName: string;
   description: string;
@@ -42,6 +43,7 @@ export interface IStudyOffer extends Document {
 // Create the schema
 const StudyOfferSchema: Schema = new Schema(
   {
+    uniqueId: { type: String, required: true, unique: true, index: true },
     title: { type: String, required: true, trim: true },
     universityName: { type: String, trim: true },
     description: { type: String, required: true },

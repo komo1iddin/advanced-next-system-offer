@@ -12,6 +12,8 @@ import {
   Menu,
   Users,
   X,
+  GraduationCap,
+  Settings,
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -46,6 +48,11 @@ export default function AdminSidebar() {
       icon: <MapPin className="h-5 w-5" />,
     },
     {
+      title: "Universities",
+      href: "/admin/universities",
+      icon: <GraduationCap className="h-5 w-5" />,
+    },
+    {
       title: "Agents",
       href: "/admin/agents",
       icon: <Users className="h-5 w-5" />,
@@ -54,6 +61,11 @@ export default function AdminSidebar() {
       title: "University Directs",
       href: "/admin/university-directs",
       icon: <Building2 className="h-5 w-5" />,
+    },
+    {
+      title: "Settings",
+      href: "/admin/settings",
+      icon: <Settings className="h-5 w-5" />,
     },
     {
       title: "Main Site",
@@ -74,7 +86,6 @@ export default function AdminSidebar() {
     <>
       {/* Mobile Menu Button */}
       <Button
-        variant="outline"
         size="icon"
         className="fixed left-4 top-4 z-50 md:hidden"
         onClick={toggleMobile}

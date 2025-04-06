@@ -202,6 +202,7 @@ export function TagInputSelector({
   
   // Handle selecting a tag from dropdown
   const handleSelectTag = (tag: TagOption) => {
+    console.log("[handleSelectTag] Called with tag:", tag);
     addTagToSelection(tag.id || tag.name);
     setInputValue("");
     inputRef.current?.focus();
@@ -284,10 +285,15 @@ export function TagInputSelector({
                                 <CommandItem
                                   key={tagId}
                                   value={tag.name}
-                                  onSelect={() => handleSelectTag(tag)}
+                                  onSelect={() => {
+                                    console.log(`[onSelect] CommandItem selected: ${tag.name} (ID: ${tagId})`);
+                                    handleSelectTag(tag);
+                                  }}
                                   className="flex items-center cursor-pointer hover:bg-accent focus:bg-accent"
                                 >
-                                  <div className="flex items-center flex-1 pointer-events-none">
+                                  <div 
+                                    className="flex items-center flex-1"
+                                  >
                                     <Check
                                       className={cn(
                                         "mr-2 h-4 w-4",
@@ -305,10 +311,15 @@ export function TagInputSelector({
                         {/* Option to create a new tag if not found */}
                         {allowCustomTags && tagExists(inputValue.trim()) === undefined && (
                           <CommandItem 
-                            onSelect={handleAddTag}
+                            onSelect={() => {
+                              console.log("[onSelect] Create tag selected:", inputValue.trim());
+                              handleAddTag();
+                            }}
                             className="border-t cursor-pointer hover:bg-accent focus:bg-accent"
                           >
-                            <div className="flex items-center text-primary pointer-events-none">
+                            <div 
+                              className="flex items-center text-primary"
+                            >
                               <span>Create tag "{inputValue.trim()}"</span>
                             </div>
                           </CommandItem>

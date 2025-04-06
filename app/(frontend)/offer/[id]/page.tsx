@@ -25,6 +25,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 
 interface Offer {
   _id: string;
+  uniqueId: string;
   title: string;
   universityName: string;
   description: string;
@@ -243,6 +244,15 @@ export default function StudyOfferDetailPage() {
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back to Offers
         </Button>
+        
+        {/* Program ID */}
+        {offer.uniqueId && (
+          <div className="flex items-center">
+            <Badge variant="outline" className="text-sm font-mono">
+              Program ID: {offer.uniqueId}
+            </Badge>
+          </div>
+        )}
         
         {/* Main content */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

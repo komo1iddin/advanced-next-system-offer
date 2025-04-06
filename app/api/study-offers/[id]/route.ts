@@ -47,10 +47,27 @@ export async function PUT(req: NextRequest, { params }: Params) {
     // Parse the request body
     const data = await req.json();
     
+    // Find the current offer to get its uniqueId
+    const currentOffer = await StudyOffer.findById(id);
+    
+    if (!currentOffer) {
+      return NextResponse.json(
+        { success: false, error: 'Study offer not found' },
+        { status: 404 }
+      );
+    }
+    
+    // Ensure uniqueId is preserved and cannot be modified
+    const updateData = {
+      ...data,
+      uniqueId: currentOffer.uniqueId, // Preserve the original uniqueId
+      updatedAt: new Date()
+    };
+    
     // Find and update the offer
     const updatedOffer = await StudyOffer.findByIdAndUpdate(
       id,
-      { ...data, updatedAt: new Date() },
+      updateData,
       { new: true, runValidators: true }
     );
     

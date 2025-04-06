@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 
 interface StudyOffer {
   _id: string;
+  uniqueId?: string;
   title: string;
   universityName: string;
   description: string;
@@ -59,6 +60,15 @@ export default function OfferCard({ offer, viewMode }: OfferCardProps) {
       </CardHeader>
       
       <CardContent className="p-4 flex-1 flex flex-col">
+        {/* Program ID - if available */}
+        {offer.uniqueId && (
+          <div className="mb-2">
+            <span className="text-xs font-mono text-muted-foreground">
+              {offer.uniqueId}
+            </span>
+          </div>
+        )}
+        
         {/* Basic Info Badges */}
         <div className="flex flex-wrap gap-2 mb-3">
           <Badge variant="outline" className="text-xs flex items-center gap-1 px-2 py-1">

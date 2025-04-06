@@ -23,6 +23,20 @@ export const locationKeys = {
   city: (id: string) => [...locationKeys.cities(), id] as const,
 };
 
+export interface Location {
+  id: string;
+  city: string;
+  province: string;
+}
+
+async function fetchLocations(): Promise<Location[]> {
+  const response = await fetch("/api/admin/locations");
+  if (!response.ok) {
+    throw new Error("Failed to fetch locations");
+  }
+  return response.json();
+}
+
 export function useLocationsQuery() {
   const { toast } = useToast();
   const queryClient = useQueryClient();

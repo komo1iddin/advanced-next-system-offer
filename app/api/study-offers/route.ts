@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase from '@/lib/mongodb';
 import StudyOffer from '@/lib/models/StudyOffer';
 import { getServerSession } from 'next-auth/next';
+import { generateUniqueId } from '@/lib/generateUniqueId';
 
 // GET all study offers
 export async function GET(req: NextRequest) {
@@ -11,6 +12,7 @@ export async function GET(req: NextRequest) {
     const category = url.searchParams.get('category');
     const degreeLevel = url.searchParams.get('degreeLevel');
     const searchQuery = url.searchParams.get('search');
+    const uniqueId = url.searchParams.get('uniqueId');
     const featured = url.searchParams.get('featured');
     const limit = parseInt(url.searchParams.get('limit') || '50');
     const page = parseInt(url.searchParams.get('page') || '1');
@@ -34,11 +36,17 @@ export async function GET(req: NextRequest) {
       query.featured = true;
     }
     
-    if (searchQuery) {
+    // If uniqueId is provided, search for exact match
+    if (uniqueId) {
+      query.uniqueId = uniqueId;
+    }
+    // Otherwise handle general search
+    else if (searchQuery) {
       query.$or = [
         { title: { $regex: searchQuery, $options: 'i' } },
         { description: { $regex: searchQuery, $options: 'i' } },
         { universityName: { $regex: searchQuery, $options: 'i' } },
+        { uniqueId: { $regex: searchQuery, $options: 'i' } }, // Add search by uniqueId
         { tags: { $in: [new RegExp(searchQuery, 'i')] } },
       ];
     }
@@ -89,8 +97,38 @@ export async function POST(req: NextRequest) {
     // Parse the request body
     const data = await req.json();
     
+    // Generate a unique ID based on the degree level and ensure it's unique
+    let uniqueId = generateUniqueId(data.degreeLevel);
+    let isUnique = false;
+    let maxAttempts = 5;  // Limit the number of attempts to prevent infinite loops
+    
+    // Check if the generated ID already exists and regenerate if necessary
+    while (!isUnique && maxAttempts > 0) {
+      const existingOffer = await StudyOffer.findOne({ uniqueId });
+      if (!existingOffer) {
+        isUnique = true;
+      } else {
+        uniqueId = generateUniqueId(data.degreeLevel);
+        maxAttempts--;
+      }
+    }
+    
+    // If we couldn't generate a unique ID after several attempts, return an error
+    if (!isUnique) {
+      return NextResponse.json(
+        { success: false, error: 'Failed to generate a unique ID' },
+        { status: 500 }
+      );
+    }
+    
+    // Add the unique ID to the data
+    const offerData = {
+      ...data,
+      uniqueId
+    };
+    
     // Create a new study offer
-    const newOffer = await StudyOffer.create(data);
+    const newOffer = await StudyOffer.create(offerData);
     
     return NextResponse.json(
       { success: true, data: newOffer },

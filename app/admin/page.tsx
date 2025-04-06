@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSession } from "next-auth/react";
-import { Layout, LayoutGrid, PlusCircle, Settings, Shield, Building2, UserPlus, Users, MapPin, Globe, Tag } from "lucide-react";
+import { Layout, LayoutGrid, PlusCircle, Settings, Shield, Building2, UserPlus, Users, MapPin, Globe, Tag, GraduationCap } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function AdminDashboardPage() {
@@ -49,6 +49,30 @@ export default function AdminDashboardPage() {
                   <span className="font-medium flex items-center gap-2">
                     <Layout className="h-4 w-4" />
                     Manage All Offers
+                  </span>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+          
+          {/* Universities Management Card */}
+          <Card className="hover:shadow-md transition-shadow">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-xl flex items-center gap-2">
+                <GraduationCap className="h-5 w-5 text-primary" />
+                Universities
+              </CardTitle>
+              <CardDescription>Manage university listings and rankings</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <Link 
+                  href="/admin/universities" 
+                  className="flex items-center justify-between p-3 rounded-md text-sm bg-muted hover:bg-muted/80 transition-colors"
+                >
+                  <span className="font-medium flex items-center gap-2">
+                    <GraduationCap className="h-4 w-4" />
+                    Manage Universities
                   </span>
                 </Link>
               </div>
@@ -113,7 +137,7 @@ export default function AdminDashboardPage() {
           </Card>
           
           {/* Tags Management Card */}
-          <Card className="hover:shadow-md transition-shadow border-primary/20">
+          <Card className="hover:shadow-md transition-shadow">
             <CardHeader className="pb-3">
               <CardTitle className="text-xl flex items-center gap-2">
                 <Tag className="h-5 w-5 text-primary" />
@@ -125,7 +149,7 @@ export default function AdminDashboardPage() {
               <div className="space-y-2">
                 <Link 
                   href="/admin/tags" 
-                  className="flex items-center justify-between p-3 rounded-md text-sm bg-primary/10 hover:bg-primary/20 transition-colors"
+                  className="flex items-center justify-between p-3 rounded-md text-sm bg-muted hover:bg-muted/80 transition-colors"
                 >
                   <span className="font-medium flex items-center gap-2">
                     <Tag className="h-4 w-4" />
