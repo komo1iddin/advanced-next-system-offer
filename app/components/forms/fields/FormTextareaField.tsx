@@ -1,14 +1,8 @@
 "use client";
 
 import { useFormContext } from "react-hook-form";
-import {
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
+import { FormField, FormItem, FormLabel, FormMessage } from "@/app/components/forms/FormField";
 
 export interface FormTextareaFieldProps {
   name: string;
@@ -40,10 +34,9 @@ export default function FormTextareaField({
 
   return (
     <FormField
-      control={form.control}
       name={name}
       render={({ field }) => (
-        <FormItem className={`space-y-2 ${className}`}>
+        <FormItem className={className}>
           <div className="flex justify-between">
             <FormLabel>
               {label}{" "}
@@ -55,16 +48,14 @@ export default function FormTextareaField({
               </span>
             )}
           </div>
-          <FormControl>
-            <Textarea
-              placeholder={placeholder}
-              disabled={disabled || form.formState.isSubmitting}
-              className="resize-vertical"
-              rows={rows}
-              maxLength={maxLength}
-              {...field}
-            />
-          </FormControl>
+          <Textarea
+            placeholder={placeholder}
+            disabled={disabled || form.formState.isSubmitting}
+            className="resize-vertical"
+            rows={rows}
+            maxLength={maxLength}
+            {...field}
+          />
           {description && (
             <p className="text-muted-foreground text-sm">{description}</p>
           )}

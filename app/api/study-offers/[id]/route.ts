@@ -1,78 +1,96 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { StudyOfferService } from '@/lib/services/StudyOfferService';
-import { errorHandler } from '@/lib/utils/error';
-import { updateStudyOfferSchema } from '@/lib/validators/studyOffer.validator';
-import { requireAdmin } from '@/lib/middleware/auth';
-import { defaultRateLimit } from '@/lib/middleware/rateLimit';
-
-const studyOfferService = new StudyOfferService();
+import { ErrorHandler } from '@/lib/middleware/errorHandler';
+import { ValidateRequest } from '@/lib/middleware/validateRequest';
+import { ResponseFormatter } from '@/lib/middleware/responseFormatter';
+import { studyOfferSchema } from '@/lib/validations/studyOfferSchema';
+import { paramsSchema } from '@/lib/validations/paramsSchema';
+import { requireAuth } from '@/lib/middleware/auth';
+import { rateLimit } from '@/lib/middleware/rateLimit';
 
 // GET a single study offer
 export async function GET(
-  req: NextRequest,
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
     // Apply rate limiting
-    await defaultRateLimit(req);
+    await rateLimit(request);
 
-    const offer = await studyOfferService.getOfferById(params.id);
-    return NextResponse.json({ success: true, data: offer });
+    // Validate route parameters
+    const { id } = await ValidateRequest.validateParams(paramsSchema, params);
+
+    // Get study offer by ID
+    const studyOffer = await StudyOfferService.getStudyOfferById(id);
+
+    if (!studyOffer) {
+      return ResponseFormatter.notFound('Study offer not found');
+    }
+
+    // Return success response
+    return ResponseFormatter.success(studyOffer);
   } catch (error) {
-    const errorResponse = errorHandler(error);
-    return NextResponse.json(
-      { success: false, error: errorResponse.error },
-      { status: errorResponse.statusCode }
-    );
+    return ErrorHandler.handle(error);
   }
 }
 
 // UPDATE a study offer
-export async function PATCH(
-  req: NextRequest,
+export async function PUT(
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    // Apply rate limiting and check admin access
-    await defaultRateLimit(req);
-    await requireAdmin(req);
+    // Apply rate limiting
+    await rateLimit(request);
 
-    // Parse and validate request body
-    const data = await req.json();
-    const validatedData = updateStudyOfferSchema.parse(data);
+    // Check authentication
+    const user = await requireAuth(request);
 
-    // Update offer
-    const updatedOffer = await studyOfferService.updateOffer(params.id, validatedData);
+    // Validate route parameters
+    const { id } = await ValidateRequest.validateParams(paramsSchema, params);
 
-    return NextResponse.json({ success: true, data: updatedOffer });
+    // Validate request body
+    const data = await ValidateRequest.validateBody(studyOfferSchema, request);
+
+    // Update study offer
+    const studyOffer = await StudyOfferService.updateStudyOffer(id, data, user);
+
+    if (!studyOffer) {
+      return ResponseFormatter.notFound('Study offer not found');
+    }
+
+    // Return success response
+    return ResponseFormatter.updated(studyOffer);
   } catch (error) {
-    const errorResponse = errorHandler(error);
-    return NextResponse.json(
-      { success: false, error: errorResponse.error },
-      { status: errorResponse.statusCode }
-    );
+    return ErrorHandler.handle(error);
   }
 }
 
 // DELETE a study offer
 export async function DELETE(
-  req: NextRequest,
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    // Apply rate limiting and check admin access
-    await defaultRateLimit(req);
-    await requireAdmin(req);
+    // Apply rate limiting
+    await rateLimit(request);
 
-    // Delete offer
-    await studyOfferService.deleteOffer(params.id);
+    // Check authentication
+    const user = await requireAuth(request);
 
-    return NextResponse.json({ success: true });
+    // Validate route parameters
+    const { id } = await ValidateRequest.validateParams(paramsSchema, params);
+
+    // Delete study offer
+    const deleted = await StudyOfferService.deleteStudyOffer(id, user);
+
+    if (!deleted) {
+      return ResponseFormatter.notFound('Study offer not found');
+    }
+
+    // Return success response
+    return ResponseFormatter.deleted();
   } catch (error) {
-    const errorResponse = errorHandler(error);
-    return NextResponse.json(
-      { success: false, error: errorResponse.error },
-      { status: errorResponse.statusCode }
-    );
+    return ErrorHandler.handle(error);
   }
 } 

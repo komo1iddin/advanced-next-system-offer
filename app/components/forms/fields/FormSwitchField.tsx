@@ -1,14 +1,11 @@
 "use client";
 
+import { forwardRef } from "react";
 import { useFormContext } from "react-hook-form";
-import {
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
 import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
+import { FormField, FormItem, FormLabel, FormMessage } from "@/app/components/forms/FormField";
 
 export interface FormSwitchFieldProps {
   name: string;
@@ -34,20 +31,17 @@ export default function FormSwitchField({
 
   return (
     <FormField
-      control={form.control}
       name={name}
       render={({ field }) => (
         <FormItem 
-          className={`flex flex-row items-center space-x-2 ${className}`}
+          className={cn("flex flex-row items-center space-x-2", className)}
         >
           {!reversed && (
-            <FormControl>
-              <Switch
-                checked={field.value}
-                onCheckedChange={field.onChange}
-                disabled={disabled || form.formState.isSubmitting}
-              />
-            </FormControl>
+            <Switch
+              checked={field.value}
+              onCheckedChange={field.onChange}
+              disabled={disabled || form.formState.isSubmitting}
+            />
           )}
           <div className="space-y-0.5">
             <FormLabel className="!mt-0">{label}</FormLabel>
@@ -56,13 +50,11 @@ export default function FormSwitchField({
             )}
           </div>
           {reversed && (
-            <FormControl>
-              <Switch
-                checked={field.value}
-                onCheckedChange={field.onChange}
-                disabled={disabled || form.formState.isSubmitting}
-              />
-            </FormControl>
+            <Switch
+              checked={field.value}
+              onCheckedChange={field.onChange}
+              disabled={disabled || form.formState.isSubmitting}
+            />
           )}
           <FormMessage />
         </FormItem>

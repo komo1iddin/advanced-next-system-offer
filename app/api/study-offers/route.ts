@@ -1,82 +1,50 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { StudyOfferService } from '@/lib/services/StudyOfferService';
-import { errorHandler } from '@/lib/utils/error';
-import { createStudyOfferSchema, getStudyOffersSchema } from '@/lib/validators/studyOffer.validator';
-import { requireAdmin } from '@/lib/middleware/auth';
-import { defaultRateLimit } from '@/lib/middleware/rateLimit';
-
-const studyOfferService = new StudyOfferService();
+import { ErrorHandler } from '@/lib/middleware/errorHandler';
+import { ValidateRequest } from '@/lib/middleware/validateRequest';
+import { ResponseFormatter } from '@/lib/middleware/responseFormatter';
+import { studyOfferSchema } from '@/lib/validations/studyOfferSchema';
+import { querySchema } from '@/lib/validations/querySchema';
+import { requireAuth } from '@/lib/middleware/auth';
+import { rateLimit } from '@/lib/middleware/rateLimit';
 
 // GET all study offers
-export async function GET(req: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
     // Apply rate limiting
-    await defaultRateLimit(req);
+    await rateLimit(request);
 
-    const url = new URL(req.url);
-    const params = Object.fromEntries(url.searchParams.entries());
-    
     // Validate query parameters
-    const validatedParams = getStudyOffersSchema.parse(params);
-    
-    // Build filters
-    const filters: any = {};
-    if (validatedParams.category) filters.category = validatedParams.category;
-    if (validatedParams.degreeLevel) filters.degreeLevel = validatedParams.degreeLevel;
-    if (validatedParams.featured === 'true') filters.featured = true;
-    if (validatedParams.uniqueId) filters.uniqueId = validatedParams.uniqueId;
-    if (validatedParams.search) {
-      filters.$or = [
-        { title: { $regex: validatedParams.search, $options: 'i' } },
-        { description: { $regex: validatedParams.search, $options: 'i' } },
-        { universityName: { $regex: validatedParams.search, $options: 'i' } },
-        { uniqueId: { $regex: validatedParams.search, $options: 'i' } },
-        { tags: { $in: [new RegExp(validatedParams.search, 'i')] } },
-      ];
-    }
+    const query = await ValidateRequest.validateQuery(querySchema, request);
 
-    const result = await studyOfferService.getOffers(
-      filters,
-      validatedParams.page,
-      validatedParams.limit
-    );
+    // Get study offers with pagination
+    const { data, total } = await StudyOfferService.getStudyOffers(query);
 
-    return NextResponse.json({
-      success: true,
-      ...result
-    });
+    // Return paginated response
+    return ResponseFormatter.paginated(data, total, query.page, query.limit);
   } catch (error) {
-    const errorResponse = errorHandler(error);
-    return NextResponse.json(
-      { success: false, error: errorResponse.error },
-      { status: errorResponse.statusCode }
-    );
+    return ErrorHandler.handle(error);
   }
 }
 
 // POST a new study offer
-export async function POST(req: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
-    // Apply rate limiting and check admin access
-    await defaultRateLimit(req);
-    await requireAdmin(req);
+    // Apply rate limiting
+    await rateLimit(request);
 
-    // Parse and validate request body
-    const data = await req.json();
-    const validatedData = createStudyOfferSchema.parse(data);
+    // Check authentication
+    const user = await requireAuth(request);
 
-    // Create new offer
-    const newOffer = await studyOfferService.createOffer(validatedData);
+    // Validate request body
+    const data = await ValidateRequest.validateBody(studyOfferSchema, request);
 
-    return NextResponse.json(
-      { success: true, data: newOffer },
-      { status: 201 }
-    );
+    // Create study offer
+    const studyOffer = await StudyOfferService.createStudyOffer(data, user);
+
+    // Return success response
+    return ResponseFormatter.created(studyOffer);
   } catch (error) {
-    const errorResponse = errorHandler(error);
-    return NextResponse.json(
-      { success: false, error: errorResponse.error },
-      { status: errorResponse.statusCode }
-    );
+    return ErrorHandler.handle(error);
   }
 } 

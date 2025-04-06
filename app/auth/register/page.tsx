@@ -12,6 +12,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { toast } from "@/components/ui/use-toast";
 import { Toaster } from "@/components/ui/toaster";
 import { School } from "lucide-react";
+import { FormBase } from "@/app/components/forms/FormBase";
+import { FormTextField } from "@/app/components/forms/fields/FormTextField";
 
 // Form validation schema
 const formSchema = z.object({

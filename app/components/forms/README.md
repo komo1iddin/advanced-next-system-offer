@@ -22,7 +22,7 @@ A comprehensive form component that handles validation, errors, and submission.
 **Usage:**
 
 ```tsx
-import { FormBase } from "@/app/components/forms";
+import { FormBase } from "@/app/components/forms/FormBase";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import {
@@ -218,7 +218,7 @@ Pre-built form field components that encapsulate common form field patterns:
 A standardized text input field.
 
 ```tsx
-import { FormTextField } from "@/app/components/forms";
+import { FormTextField } from "@/app/components/forms/fields/FormTextField";
 
 // Inside your form render function:
 <FormTextField
@@ -236,7 +236,7 @@ import { FormTextField } from "@/app/components/forms";
 A standardized select dropdown input.
 
 ```tsx
-import { FormSelectField } from "@/app/components/forms";
+import { FormSelectField } from "@/app/components/forms/fields/FormSelectField";
 
 // Define options
 const countryOptions = [
@@ -261,7 +261,7 @@ const countryOptions = [
 A standardized toggle switch input.
 
 ```tsx
-import { FormSwitchField } from "@/app/components/forms";
+import { FormSwitchField } from "@/app/components/forms/fields/FormSwitchField";
 
 // Inside your form render function:
 <FormSwitchField
@@ -269,6 +269,58 @@ import { FormSwitchField } from "@/app/components/forms";
   label="Active Status"
   description="Toggle to enable or disable"
   disabled={isSubmitting}
+/>
+```
+
+#### FormDateField
+
+A standardized date input field.
+
+```tsx
+import { FormDateField } from "@/app/components/forms/fields/FormDateField";
+
+// Inside your form render function:
+<FormDateField
+  name="birthdate"
+  label="Birthdate"
+  placeholder="Select your birthdate"
+  required
+  disabled={isSubmitting}
+/>
+```
+
+#### FormFileField
+
+A standardized file input field.
+
+```tsx
+import { FormFileField } from "@/app/components/forms/fields/FormFileField";
+
+// Inside your form render function:
+<FormFileField
+  name="resume"
+  label="Resume"
+  accept=".pdf,.doc,.docx"
+  required
+  disabled={isSubmitting}
+/>
+```
+
+#### FormTextareaField
+
+A standardized textarea input field.
+
+```tsx
+import { FormTextareaField } from "@/app/components/forms/fields/FormTextareaField";
+
+// Inside your form render function:
+<FormTextareaField
+  name="bio"
+  label="Bio"
+  placeholder="Enter your bio"
+  required
+  disabled={isSubmitting}
+  rows={4}
 />
 ```
 

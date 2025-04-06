@@ -2,8 +2,34 @@ import { User, IUser } from '@/lib/models/User';
 import { AppError } from '@/lib/utils/error';
 import { cacheService } from './CacheService';
 import { logService } from './LogService';
+import mongoose from 'mongoose';
 
 type UserRole = 'super-admin' | 'admin' | 'manager' | 'user';
+
+interface CreateUserData {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+  role?: UserRole;
+  status?: 'active' | 'inactive' | 'suspended';
+  phone?: string;
+  avatar?: string;
+  agentId?: string;
+  universityDirectId?: string;
+}
+
+interface UpdateUserData {
+  email?: string;
+  firstName?: string;
+  lastName?: string;
+  role?: UserRole;
+  status?: 'active' | 'inactive' | 'suspended';
+  phone?: string;
+  avatar?: string;
+  agentId?: string;
+  universityDirectId?: string;
+}
 
 export class UserService {
   private readonly CACHE_TTL = 3600; // 1 hour
@@ -19,16 +45,70 @@ export class UserService {
     return roleHierarchy[requesterRole] > roleHierarchy[targetRole];
   }
 
-  async createUser(data: Partial<IUser>, requesterRole: UserRole) {
+  private convertToObjectId(id?: string): mongoose.Types.ObjectId | undefined {
+    if (!id) return undefined;
+    try {
+      return new mongoose.Types.ObjectId(id);
+    } catch (error) {
+      throw new AppError(400, 'Invalid ID format');
+    }
+  }
+
+  async getUsers(query: any, skip: number, limit: number, requesterRole: UserRole) {
+    try {
+      logService.info('Fetching users', { query, skip, limit });
+
+      // Build the query with role-based access control
+      const finalQuery = { ...query };
+      if (requesterRole !== 'super-admin') {
+        // Only super-admin can see all users
+        // Others can only see users with lower roles
+        const allowedRoles = ['user'];
+        if (requesterRole === 'admin') allowedRoles.push('manager');
+        if (requesterRole === 'manager') allowedRoles.push('user');
+        finalQuery.role = { $in: allowedRoles };
+      }
+
+      const users = await User.find(finalQuery)
+        .select('-password -resetPasswordToken -resetPasswordExpires')
+        .skip(skip)
+        .limit(limit)
+        .sort({ createdAt: -1 })
+        .lean();
+
+      return users;
+    } catch (error) {
+      logService.logError(error as Error);
+      throw new AppError(500, 'Failed to fetch users');
+    }
+  }
+
+  async countUsers(query: any) {
+    try {
+      return await User.countDocuments(query);
+    } catch (error) {
+      logService.logError(error as Error);
+      throw new AppError(500, 'Failed to count users');
+    }
+  }
+
+  async createUser(data: CreateUserData, requesterRole: UserRole) {
     try {
       logService.info('Creating new user', { email: data.email });
 
       // Check if requester has permission to create user with specified role
-      if (data.role && !this.canManageUser(requesterRole, data.role as UserRole)) {
+      if (data.role && !this.canManageUser(requesterRole, data.role)) {
         throw new AppError(403, 'Insufficient permissions to create user with this role');
       }
 
-      const user = await User.create(data);
+      // Convert string IDs to ObjectId
+      const userData: Partial<IUser> = {
+        ...data,
+        agentId: this.convertToObjectId(data.agentId),
+        universityDirectId: this.convertToObjectId(data.universityDirectId)
+      };
+
+      const user = await User.create(userData);
       
       // Clear relevant caches
       await this.clearCaches();
@@ -116,7 +196,7 @@ export class UserService {
     }
   }
 
-  async updateUser(id: string, data: Partial<IUser>, requesterRole: UserRole) {
+  async updateUser(id: string, data: UpdateUserData, requesterRole: UserRole) {
     try {
       logService.info('Updating user', { id });
 
@@ -131,13 +211,21 @@ export class UserService {
       }
 
       // Check if requester has permission to change role
-      if (data.role && !this.canManageUser(requesterRole, data.role as UserRole)) {
+      if (data.role && !this.canManageUser(requesterRole, data.role)) {
         throw new AppError(403, 'Insufficient permissions to change user role');
       }
 
+      // Convert string IDs to ObjectId
+      const updateData: Partial<IUser> = {
+        ...data,
+        agentId: this.convertToObjectId(data.agentId),
+        universityDirectId: this.convertToObjectId(data.universityDirectId),
+        updatedAt: new Date()
+      };
+
       const user = await User.findByIdAndUpdate(
         id,
-        { ...data, updatedAt: new Date() },
+        updateData,
         { new: true, runValidators: true }
       ).select('-password -resetPasswordToken -resetPasswordExpires');
 

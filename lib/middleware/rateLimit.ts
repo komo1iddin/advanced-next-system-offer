@@ -1,54 +1,65 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { AppError } from '@/lib/utils/error';
+import { NextRequest } from 'next/server';
+import { AppError } from '../utils/error';
+import { logService } from '../services/LogService';
 
-// Simple in-memory rate limiter
-const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
-
-export const rateLimit = (options: {
+interface RateLimitConfig {
   windowMs: number;
   max: number;
   message?: string;
-}) => {
-  const { windowMs, max, message = 'Too many requests, please try again later.' } = options;
+}
 
-  return async (req: NextRequest) => {
-    const ip = req.ip || 'unknown';
-    const now = Date.now();
-
-    // Clean up old entries
-    for (const [key, value] of rateLimitMap.entries()) {
-      if (value.resetTime < now) {
-        rateLimitMap.delete(key);
-      }
-    }
-
-    // Get or create rate limit entry
-    const entry = rateLimitMap.get(ip) || { count: 0, resetTime: now + windowMs };
-    
-    // Check if window has expired
-    if (entry.resetTime < now) {
-      entry.count = 0;
-      entry.resetTime = now + windowMs;
-    }
-
-    // Check if limit exceeded
-    if (entry.count >= max) {
-      throw new AppError(429, message);
-    }
-
-    // Increment count
-    entry.count++;
-    rateLimitMap.set(ip, entry);
-
-    // Add rate limit headers
-    const response = NextResponse.next();
-    response.headers.set('X-RateLimit-Limit', max.toString());
-    response.headers.set('X-RateLimit-Remaining', (max - entry.count).toString());
-    response.headers.set('X-RateLimit-Reset', entry.resetTime.toString());
-
-    return response;
-  };
+const defaultConfig: RateLimitConfig = {
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  message: 'Too many requests, please try again later.'
 };
+
+const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
+
+export async function rateLimit(req: NextRequest, config: Partial<RateLimitConfig> = {}) {
+  const finalConfig = { ...defaultConfig, ...config };
+  const ip = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown';
+
+  const now = Date.now();
+  const windowStart = now - finalConfig.windowMs;
+
+  // Clean up old entries
+  for (const [key, value] of rateLimitStore.entries()) {
+    if (value.resetTime < windowStart) {
+      rateLimitStore.delete(key);
+    }
+  }
+
+  // Get or initialize the rate limit entry
+  let entry = rateLimitStore.get(ip);
+  if (!entry) {
+    entry = { count: 0, resetTime: now + finalConfig.windowMs };
+    rateLimitStore.set(ip, entry);
+  }
+
+  // Check if the window has reset
+  if (entry.resetTime < now) {
+    entry.count = 0;
+    entry.resetTime = now + finalConfig.windowMs;
+  }
+
+  // Increment the counter
+  entry.count++;
+
+  // Check if the limit has been exceeded
+  if (entry.count > finalConfig.max) {
+    logService.warn('Rate limit exceeded', { ip, count: entry.count });
+    throw new AppError(429, finalConfig.message);
+  }
+
+  // Add rate limit headers to the response
+  const headers = new Headers();
+  headers.set('X-RateLimit-Limit', finalConfig.max.toString());
+  headers.set('X-RateLimit-Remaining', (finalConfig.max - entry.count).toString());
+  headers.set('X-RateLimit-Reset', entry.resetTime.toString());
+
+  return headers;
+}
 
 // Default rate limiters
 export const defaultRateLimit = rateLimit({

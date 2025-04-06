@@ -2,17 +2,11 @@
 
 import { useState } from "react";
 import { useFormContext } from "react-hook-form";
-import {
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Upload, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { FormField, FormItem, FormLabel, FormMessage } from "@/app/components/forms/FormField";
 
 export interface FormFileFieldProps {
   name: string;
@@ -106,10 +100,9 @@ export default function FormFileField({
 
   return (
     <FormField
-      control={form.control}
       name={name}
       render={({ field }) => (
-        <FormItem className={`space-y-2 ${className}`}>
+        <FormItem className={className}>
           <FormLabel>
             {label}{" "}
             {required && <span className="text-red-500">*</span>}
@@ -117,17 +110,15 @@ export default function FormFileField({
           
           <div className="flex flex-col gap-2">
             <div className="flex items-center gap-2">
-              <FormControl>
-                <Input
-                  type="file"
-                  accept={accept}
-                  multiple={multiple}
-                  disabled={disabled || form.formState.isSubmitting}
-                  className="hidden"
-                  id={`file-input-${name}`}
-                  onChange={handleFileChange}
-                />
-              </FormControl>
+              <Input
+                type="file"
+                accept={accept}
+                multiple={multiple}
+                disabled={disabled || form.formState.isSubmitting}
+                className="hidden"
+                id={`file-input-${name}`}
+                onChange={handleFileChange}
+              />
               
               <Button
                 type="button"
