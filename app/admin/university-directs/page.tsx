@@ -101,7 +101,6 @@ export default function UniversityDirectsPage() {
       <Card>
         <CardHeader className="pb-3 flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
           <div>
-            <CardTitle>University Directs</CardTitle>
             <CardDescription>
               {universityDirects.length} university contact{universityDirects.length !== 1 ? 's' : ''} available
             </CardDescription>
