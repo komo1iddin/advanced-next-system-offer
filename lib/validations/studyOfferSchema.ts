@@ -2,36 +2,53 @@ import { z } from "zod";
 
 // Basic validation schemas for common fields
 const idSchema = z.string().optional();
-const titleSchema = z.string().min(1, "Title is required").max(100);
-const descriptionSchema = z.string().min(10, "Description must be at least 10 characters").max(5000);
-const universityNameSchema = z.string().min(1, "University name is required").max(100);
-const locationSchema = z.string().min(1, "Location is required").max(100);
-const durationInYearsSchema = z.number().min(0.5, "Duration must be at least 0.5 years");
-const applicationDeadlineSchema = z.date().or(z.string().transform(val => new Date(val)));
-const degreeLevelSchema = z.enum(['Bachelor', 'Master', 'PhD', 'Certificate', 'Diploma', 'Language Course']);
-const programsSchema = z.array(z.string()).min(1, "At least one program is required");
+const titleSchema = z.string().min(1, "Title is required").max(500);
+const descriptionSchema = z.string().min(1, "Description is required").max(10000);
+const universityNameSchema = z.string().min(1, "University name is required").max(200).optional();
+const locationSchema = z.string().min(1, "Location is required").max(200).optional();
+const durationInYearsSchema = z.union([
+  z.number().min(0.1, "Duration must be positive"),
+  z.string().transform((val) => parseFloat(val) || 0)
+]).optional();
+const applicationDeadlineSchema = z
+  .union([
+    z.date(),
+    z.string().transform((val) => {
+      try {
+        return new Date(val);
+      } catch {
+        return new Date();
+      }
+    })
+  ])
+  .optional();
+const degreeLevelSchema = z.string().optional();
+const programsSchema = z.array(z.string()).min(1, "At least one program is required").optional();
 const languageRequirementsSchema = z.array(
   z.object({
-    language: z.string(),
+    language: z.string().optional(),
     minimumScore: z.string().optional(),
     testName: z.string().optional()
   })
-).min(1, "At least one language requirement is required");
-const admissionRequirementsSchema = z.array(z.string()).min(1, "At least one admission requirement is required");
+).optional();
+const admissionRequirementsSchema = z.array(z.string()).optional();
 const campusFacilitiesSchema = z.array(z.string()).optional();
-const tagsSchema = z.array(z.string()).min(1, "At least one tag is required");
-const colorSchema = z.string().min(1, "Color is required");
-const accentColorSchema = z.string().min(1, "Accent color is required");
-const categorySchema = z.enum(['University', 'College']);
-const sourceSchema = z.enum(['agent', 'university direct', 'public university offer']).default('university direct');
+const tagsSchema = z.array(z.string()).optional();
+const colorSchema = z.string().optional();
+const accentColorSchema = z.string().optional();
+const categorySchema = z.string().optional();
+const sourceSchema = z.string().optional();
 const tuitionFeesSchema = z.object({
-  amount: z.number().min(0, "Amount must be positive"),
-  currency: z.string(),
-  period: z.string()
-});
-const scholarshipAvailableSchema = z.boolean().default(false);
+  amount: z.union([
+    z.number().min(0),
+    z.string().transform((val) => parseFloat(val) || 0)
+  ]),
+  currency: z.string().optional(),
+  period: z.string().optional()
+}).optional();
+const scholarshipAvailableSchema = z.boolean().optional();
 const scholarshipDetailsSchema = z.string().optional();
-const featuredSchema = z.boolean().default(false);
+const featuredSchema = z.boolean().optional();
 const cityIdSchema = z.string().optional();
 const provinceIdSchema = z.string().optional();
 const agentIdSchema = z.string().optional();
@@ -41,10 +58,12 @@ const createdAtSchema = z.date().optional();
 const updatedAtSchema = z.date().optional();
 const createdBySchema = z.string().optional();
 const updatedBySchema = z.string().optional();
+const uniqueIdSchema = z.string().optional();
 
 // Main study offer schema
 export const studyOfferSchema = z.object({
   id: idSchema,
+  uniqueId: uniqueIdSchema,
   title: titleSchema,
   universityName: universityNameSchema,
   description: descriptionSchema,
@@ -74,7 +93,7 @@ export const studyOfferSchema = z.object({
   updatedAt: updatedAtSchema,
   createdBy: createdBySchema,
   updatedBy: updatedBySchema,
-});
+}).passthrough(); // Allow additional fields
 
 // Schema for creating a new study offer
 export const createStudyOfferSchema = studyOfferSchema.omit({
@@ -83,7 +102,7 @@ export const createStudyOfferSchema = studyOfferSchema.omit({
   updatedAt: true,
   createdBy: true,
   updatedBy: true,
-});
+}).passthrough(); // Allow additional fields
 
 // Schema for updating an existing study offer
 export const updateStudyOfferSchema = createStudyOfferSchema.partial();
@@ -91,8 +110,8 @@ export const updateStudyOfferSchema = createStudyOfferSchema.partial();
 // Schema for filtering study offers
 export const studyOfferFilterSchema = z.object({
   search: z.string().optional(),
-  degreeLevel: degreeLevelSchema.optional(),
-  category: categorySchema.optional(),
+  degreeLevel: z.string().optional(),
+  category: z.string().optional(), 
   city: z.string().optional(),
   province: z.string().optional(),
   featured: z.boolean().optional(),
@@ -101,17 +120,11 @@ export const studyOfferFilterSchema = z.object({
   maxTuition: z.number().optional(),
   minDuration: z.number().optional(),
   maxDuration: z.number().optional(),
-  sortBy: z.enum([
-    "title",
-    "durationInYears",
-    "applicationDeadline",
-    "createdAt",
-    "updatedAt",
-  ]).optional(),
+  sortBy: z.string().optional(),
   sortOrder: z.enum(["asc", "desc"]).optional(),
   page: z.number().min(1).optional(),
   limit: z.number().min(1).max(100).optional(),
-});
+}).passthrough(); // Allow additional fields
 
 // Type inference
 export type StudyOffer = z.infer<typeof studyOfferSchema>;

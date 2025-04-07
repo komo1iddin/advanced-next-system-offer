@@ -7,6 +7,7 @@ export class ValidateRequest {
     try {
       return await schema.parseAsync(data);
     } catch (error) {
+      console.error('Validation error details:', JSON.stringify(error, null, 2));
       throw new AppError('Invalid request data', 400, 'VALIDATION_ERROR', error);
     }
   }
@@ -19,9 +20,20 @@ export class ValidateRequest {
   static async validateBody(schema: ZodSchema, request: NextRequest) {
     try {
       const body = await request.json();
+      console.log('Request body:', JSON.stringify(body, null, 2));
       return await this.validate(schema, body);
     } catch (error) {
-      throw new AppError('Invalid request body', 400, 'INVALID_BODY');
+      if (error instanceof SyntaxError) {
+        console.error('JSON parsing error:', error.message);
+        throw new AppError('Invalid JSON in request body', 400, 'INVALID_JSON');
+      }
+      
+      if (error instanceof AppError) {
+        throw error;
+      }
+      
+      console.error('Request body validation error:', error);
+      throw new AppError('Invalid request body', 400, 'INVALID_BODY', error);
     }
   }
 
