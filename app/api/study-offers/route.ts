@@ -4,7 +4,7 @@ import { ErrorHandler } from '@/lib/middleware/errorHandler';
 import { ValidateRequest } from '@/lib/middleware/validateRequest';
 import { ResponseFormatter } from '@/lib/middleware/responseFormatter';
 import { studyOfferSchema } from '@/lib/validations/studyOfferSchema';
-import { querySchema } from '@/lib/validations/querySchema';
+import { studyOfferQuerySchema } from '@/lib/validations/querySchema';
 import { requireAuth } from '@/lib/middleware/auth';
 import { rateLimit } from '@/lib/middleware/rateLimit';
 
@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
     await rateLimit(request);
 
     // Validate query parameters
-    const query = await ValidateRequest.validateQuery(querySchema, request);
+    const query = await ValidateRequest.validateQuery(studyOfferQuerySchema, request);
 
     // Get study offers with pagination
     const { data, total } = await StudyOfferService.getStudyOffers(query);

@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import connectToDatabase from "@/lib/mongodb";
 import University from "@/lib/models/University";
 import City from "@/lib/models/City";
+import Province from "@/lib/models/Province";
 
 // Helper function to get session and validate admin access
 async function validateAdminAccess() {

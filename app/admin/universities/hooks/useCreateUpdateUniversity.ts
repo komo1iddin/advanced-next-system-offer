@@ -20,6 +20,7 @@ async function createUniversity(data: CreateUniversityData) {
     headers: {
       "Content-Type": "application/json",
     },
+    credentials: "include",
     body: JSON.stringify(data),
   });
 
@@ -41,6 +42,7 @@ async function updateUniversity({ id, data }: UpdateUniversityData) {
     headers: {
       "Content-Type": "application/json",
     },
+    credentials: "include",
     body: JSON.stringify(data),
   });
 
@@ -62,6 +64,7 @@ export function useCreateUniversity() {
     mutationFn: createUniversity,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["universities"] });
+      queryClient.refetchQueries({ queryKey: ["universities"] });
       toast({
         title: "Success",
         description: "University has been created successfully",
@@ -84,6 +87,7 @@ export function useUpdateUniversity() {
     mutationFn: updateUniversity,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["universities"] });
+      queryClient.refetchQueries({ queryKey: ["universities"] });
       toast({
         title: "Success",
         description: "University has been updated successfully",

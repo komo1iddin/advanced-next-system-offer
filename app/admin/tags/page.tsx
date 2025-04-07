@@ -23,6 +23,7 @@ import { AdminPageLayout } from "@/components/ui/admin-page-layout";
 import { useTagsQuery } from "./hooks/useTagsQuery";
 import TagDialogs from "./components/TagDialogs";
 import { TagsTable } from "@/app/components/tables/TagsTable";
+import { z } from "zod";
 
 export default function TagsPage() {
   const router = useRouter();
@@ -71,9 +72,30 @@ export default function TagsPage() {
 
   // Handle tag add
   const handleAddTag = useCallback((data: any) => {
-    addTag(data);
+    if (data.name && data.category) {
+      // Check if we need to create both a category and tag
+      if (data.createMissingCategory) {
+        const existingCategories = Array.from(new Set(tags.map(t => t.category)));
+        if (!existingCategories.includes(data.category)) {
+          // We're creating a new category - this logic should be in the backend
+          // but we're handling it here for consistency
+          addTag({
+            name: data.category,
+            category: data.category,
+            active: data.active
+          });
+        }
+      }
+      
+      // Add the actual tag
+      addTag({
+        name: data.name,
+        category: data.category,
+        active: data.active
+      });
+    }
     setIsAddTagDialogOpen(false);
-  }, [addTag]);
+  }, [addTag, tags]);
 
   // Filter tags based on search term
   const filteredTags = tagRows.filter(tag => {

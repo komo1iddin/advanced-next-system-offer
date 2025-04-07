@@ -19,14 +19,31 @@ export class StudyOfferService {
       }
 
       // If not in cache, fetch from database
-      const studyOffers = await StudyOffer.find(query)
+      const { page = 1, limit = 10, ...filters } = query;
+      
+      // Calculate skip value for pagination
+      const skip = (page - 1) * limit;
+      
+      // Build the query
+      const studyOffers = await StudyOffer.find(filters)
         .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
         .lean();
+        
+      // Get total count for pagination
+      const total = await StudyOffer.countDocuments(filters);
+      
+      // Create result with pagination data
+      const result = {
+        data: studyOffers,
+        total
+      };
 
       // Cache the results
-      await cacheService.set(cacheKey, studyOffers, this.CACHE_TTL);
+      await cacheService.set(cacheKey, result, this.CACHE_TTL);
 
-      return studyOffers;
+      return result;
     } catch (error) {
       logService.error('Error in getStudyOffers:', error);
       throw new AppError('Failed to fetch study offers', 500);

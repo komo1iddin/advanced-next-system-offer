@@ -132,8 +132,20 @@ export function UniversitiesTable({
     <div className="text-center py-8">
       <School className="mx-auto h-12 w-12 text-muted-foreground/50" />
       <p className="mt-2 text-muted-foreground">
-        No universities found. Add your first university to get started.
+        {isLoading ? "Loading universities..." : 
+          isError ? "There was an error loading universities. Please try again later." :
+          "No universities found. Add your first university to get started."}
       </p>
+      {isError && error && (
+        <p className="mt-2 text-xs text-red-500">
+          {error instanceof Error ? error.message : String(error)}
+        </p>
+      )}
+      {isError && refetch && (
+        <Button onClick={() => refetch()} size="sm" className="mt-4">
+          Try Again
+        </Button>
+      )}
     </div>
   );
 

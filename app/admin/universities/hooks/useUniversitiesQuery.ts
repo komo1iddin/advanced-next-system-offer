@@ -17,7 +17,10 @@ export interface University {
 }
 
 async function fetchUniversities(): Promise<University[]> {
-  const response = await fetch("/api/admin/universities");
+  // Use credentials include to ensure cookies are sent
+  const response = await fetch("/api/admin/universities", {
+    credentials: "include"
+  });
   
   if (response.status === 401) {
     throw new Error("Unauthorized. Please make sure you're logged in as an admin.");
@@ -31,19 +34,24 @@ async function fetchUniversities(): Promise<University[]> {
 }
 
 export function useUniversitiesQuery() {
-  const { status } = useSession();
+  const { status, data: session } = useSession();
   
   return useQuery({
     queryKey: ["universities"],
     queryFn: fetchUniversities,
     // Only run the query when the user is authenticated
-    enabled: status === "authenticated",
-    // Retry failed requests max 1 time and not for 401 errors
+    enabled: status === "authenticated" && !!session?.user,
+    // Handle unauthorized errors properly during data fetching
     retry: (failureCount, error) => {
       if (error instanceof Error && error.message.includes("Unauthorized")) {
         return false;
       }
-      return failureCount < 1;
+      return failureCount < 2;
     },
+    // Increase staleTime to prevent too frequent refetching
+    staleTime: 30000, // 30 seconds
+    // Remove the refetchInterval that was causing too many requests
+    refetchOnWindowFocus: false,
+    refetchOnMount: true
   });
 } 

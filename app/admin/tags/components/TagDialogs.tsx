@@ -1,17 +1,10 @@
 "use client";
 
+import { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { PlusCircle } from "lucide-react";
 import { Tag } from "../lib/tag-service";
 import TagForm from "./TagForm";
+import { FormModal } from "@/app/components/forms";
 
 interface DialogControl<T> {
   isOpen: boolean;
@@ -26,7 +19,7 @@ interface TagDialogsProps {
     add: DialogControl<never>;
     edit: DialogControl<Tag>;
   };
-  onAddTag: (data: { name: string; category?: string; active: boolean }) => void;
+  onAddTag: (data: { name: string; category?: string; active: boolean; createMissingCategory?: boolean }) => void;
   onUpdateTag: (data: { name?: string; category?: string; active?: boolean }) => void;
 }
 
@@ -36,44 +29,41 @@ export default function TagDialogs({
   onAddTag, 
   onUpdateTag 
 }: TagDialogsProps) {
+  const EmptyTrigger = () => <span style={{ display: 'none' }}></span>;
+
   return (
     <>
       {/* Add Tag Dialog */}
-      <Dialog open={dialogs.add.isOpen} onOpenChange={dialogs.add.setOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add New Tag</DialogTitle>
-            <DialogDescription>
-              Create a new tag for categorizing study offers.
-            </DialogDescription>
-          </DialogHeader>
-          <TagForm
-            allTags={tags}
-            onSubmit={onAddTag}
-            isSubmitting={dialogs.add.isSubmitting}
-          />
-        </DialogContent>
-      </Dialog>
+      <FormModal
+        mode="create"
+        entityLabels={{ singular: "Tag" }}
+        open={dialogs.add.isOpen}
+        onOpenChange={dialogs.add.setOpen}
+        isSubmitting={dialogs.add.isSubmitting}
+        onSubmit={onAddTag}
+        schema={TagForm.schema}
+        defaultValues={TagForm.getDefaultValues()}
+        renderForm={(form) => <TagForm.Content form={form} tags={tags} mode="create" />}
+      >
+        <EmptyTrigger />
+      </FormModal>
 
       {/* Edit Tag Dialog */}
-      <Dialog open={dialogs.edit.isOpen} onOpenChange={dialogs.edit.setOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit Tag</DialogTitle>
-            <DialogDescription>
-              Modify the existing tag.
-            </DialogDescription>
-          </DialogHeader>
-          {dialogs.edit.selected && (
-            <TagForm
-              tag={dialogs.edit.selected}
-              allTags={tags}
-              onSubmit={onUpdateTag}
-              isSubmitting={dialogs.edit.isSubmitting}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
+      {dialogs.edit.selected && (
+        <FormModal
+          mode="edit"
+          entityLabels={{ singular: "Tag" }}
+          open={dialogs.edit.isOpen}
+          onOpenChange={dialogs.edit.setOpen}
+          isSubmitting={dialogs.edit.isSubmitting}
+          onSubmit={onUpdateTag}
+          schema={TagForm.schema}
+          defaultValues={TagForm.getDefaultValues(dialogs.edit.selected)}
+          renderForm={(form) => <TagForm.Content form={form} tags={tags} mode="edit" />}
+        >
+          <EmptyTrigger />
+        </FormModal>
+      )}
     </>
   );
 } 

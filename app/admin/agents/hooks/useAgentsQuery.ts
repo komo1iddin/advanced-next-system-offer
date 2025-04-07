@@ -149,6 +149,25 @@ export function useAgentsQuery(searchQuery: string = '') {
           (agent.description && agent.description.toLowerCase().includes(searchQuery.toLowerCase()))
       );
   
+  // Mutation for adding a new agent
+  const addAgentMutation = useMutation({
+    mutationFn: createAgent,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: agentKeys.lists() });
+      toast({
+        title: "Success",
+        description: "Agent added successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to add agent",
+        variant: "destructive",
+      });
+    }
+  });
+  
   // Mutation for toggling agent active status
   const toggleActiveMutation = useMutation({
     mutationFn: ({ id, active }: { id: string; active: boolean }) => 
@@ -253,12 +272,16 @@ export function useAgentsQuery(searchQuery: string = '') {
     refetch: agentsQuery.refetch,
     
     // Mutations
+    addAgent: (data: AgentCreateInput): Promise<void> => 
+      addAgentMutation.mutateAsync(data).then(() => {}),
+    isAddingAgent: addAgentMutation.isPending,
+    
     toggleAgentActive: (id: string, currentActive: boolean): Promise<void> => 
       toggleActiveMutation.mutateAsync({ id, active: !currentActive }).then(() => {}),
     isTogglingActive: toggleActiveMutation.isPending,
     
     deleteAgent: (id: string): Promise<void> => 
       deleteMutation.mutateAsync(id).then(() => {}),
-    isDeleting: deleteMutation.isPending,
+    isDeletingAgent: deleteMutation.isPending,
   };
 } 

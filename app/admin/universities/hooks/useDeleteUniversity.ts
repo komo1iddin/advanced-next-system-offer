@@ -4,6 +4,7 @@ import { toast } from "@/components/ui/use-toast";
 async function deleteUniversity(id: string): Promise<void> {
   const response = await fetch(`/api/admin/universities/${id}`, {
     method: "DELETE",
+    credentials: "include",
   });
 
   if (!response.ok) {
@@ -18,6 +19,7 @@ export function useDeleteUniversity() {
     mutationFn: deleteUniversity,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["universities"] });
+      queryClient.refetchQueries({ queryKey: ["universities"] });
       toast({
         title: "Success",
         description: "University has been deleted successfully",

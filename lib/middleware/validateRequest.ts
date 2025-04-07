@@ -7,7 +7,7 @@ export class ValidateRequest {
     try {
       return await schema.parseAsync(data);
     } catch (error) {
-      throw new AppError('VALIDATION_ERROR', 'Invalid request data', 400, error);
+      throw new AppError('Invalid request data', 400, 'VALIDATION_ERROR', error);
     }
   }
 
@@ -21,7 +21,7 @@ export class ValidateRequest {
       const body = await request.json();
       return await this.validate(schema, body);
     } catch (error) {
-      throw new AppError('INVALID_BODY', 'Invalid request body', 400);
+      throw new AppError('Invalid request body', 400, 'INVALID_BODY');
     }
   }
 

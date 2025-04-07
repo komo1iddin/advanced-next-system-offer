@@ -14,6 +14,7 @@ async function toggleUniversityActive({ id, active }: ToggleActiveParams): Promi
     headers: {
       'Content-Type': 'application/json',
     },
+    credentials: "include",
     body: JSON.stringify({ active }),
   });
 
@@ -69,6 +70,7 @@ export function useToggleUniversityActive() {
     onSettled: () => {
       // Always refetch after error or success to make sure our local data is in sync with the server
       queryClient.invalidateQueries({ queryKey: ['universities'] });
+      queryClient.refetchQueries({ queryKey: ['universities'] });
     },
   });
 } 
