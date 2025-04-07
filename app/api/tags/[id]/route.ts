@@ -7,15 +7,16 @@ import { getServerSession } from 'next-auth/next';
 // GET a specific tag by ID
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
   try {
+    const { params } = context;
     console.log(`GET /api/tags/${params.id} - Request received`);
     
     // Connect to the database
     await connectToDatabase();
     
-    // Get the ID from params
+    // Get the ID from params - access through context.params which is already resolved
     const id = params.id;
     
     // Find the tag by ID
@@ -41,9 +42,10 @@ export async function GET(
 // UPDATE a specific tag by ID
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
   try {
+    const { params } = context;
     console.log(`PUT /api/tags/${params.id} - Request received`);
     
     // Check if user is authenticated
@@ -76,7 +78,7 @@ export async function PUT(
     
     console.log('Verified admin rights through database lookup');
     
-    // Get the ID from params
+    // Get the ID from params - access through context.params which is already resolved
     const id = params.id;
     
     // Parse the request body
@@ -125,9 +127,10 @@ export async function PUT(
 // DELETE a specific tag by ID
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
   try {
+    const { params } = context;
     console.log(`DELETE /api/tags/${params.id} - Request received`);
     
     // Check if user is authenticated
@@ -160,7 +163,7 @@ export async function DELETE(
     
     console.log('Verified admin rights through database lookup');
     
-    // Get the ID from params
+    // Get the ID from params - access through context.params which is already resolved
     const id = params.id;
     
     // Delete the tag
