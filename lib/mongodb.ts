@@ -35,6 +35,10 @@ if (!global.mongoose) {
 
 async function connectToDatabase(): Promise<mongoose.Connection> {
   if (cached.conn) {
+    // Ensure all models are registered even when using cached connection
+    require('./models/Province');
+    require('./models/City');
+    require('./models/University');
     return cached.conn;
   }
 
@@ -51,6 +55,11 @@ async function connectToDatabase(): Promise<mongoose.Connection> {
   try {
     const mongoose = await cached.promise;
     cached.conn = mongoose.connection;
+    
+    // Pre-load all model schemas to ensure they're registered
+    require('./models/Province');
+    require('./models/City');
+    require('./models/University');
   } catch (e) {
     cached.promise = null;
     throw e;

@@ -2,9 +2,13 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import connectToDatabase from "@/lib/mongodb";
+import mongoose from 'mongoose';
 import University from "@/lib/models/University";
 import City from "@/lib/models/City";
 import Province from "@/lib/models/Province";
+
+// Force model registration
+const models = { University, City, Province };
 
 export async function GET() {
   try {
@@ -18,6 +22,12 @@ export async function GET() {
     await connectToDatabase();
     
     try {
+      // Ensure Province model is registered before population
+      if (!mongoose.models.Province) {
+        console.log("Province model not registered, importing now");
+        require("@/lib/models/Province");
+      }
+      
       // Fetch universities with their location information
       // Properly populate the nested provinceId field
       const universities = await University.find()

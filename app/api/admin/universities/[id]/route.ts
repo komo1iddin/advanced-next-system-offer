@@ -2,9 +2,13 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import connectToDatabase from "@/lib/mongodb";
+import mongoose from 'mongoose';
 import University from "@/lib/models/University";
 import City from "@/lib/models/City";
 import Province from "@/lib/models/Province";
+
+// Force model registration
+const models = { University, City, Province };
 
 // Helper function to get session and validate admin access
 async function validateAdminAccess() {
@@ -31,6 +35,12 @@ export async function PUT(request: Request, context: { params: { id: string } })
     // Parse the request body
     const body = await request.json();
     const { name, locationId, localRanking, worldRanking } = body;
+    
+    // Ensure Province model is registered before population
+    if (!mongoose.models.Province) {
+      console.log("Province model not registered in PUT, importing now");
+      require("@/lib/models/Province");
+    }
     
     // Check if the university exists
     const existingUniversity = await University.findById(id); // Use the extracted id
@@ -101,6 +111,12 @@ export async function PATCH(request: Request, context: { params: { id: string } 
     
     // Parse the request body
     const body = await request.json();
+    
+    // Ensure Province model is registered before population
+    if (!mongoose.models.Province) {
+      console.log("Province model not registered in PATCH, importing now");
+      require("@/lib/models/Province");
+    }
     
     // Update specific fields (like active status)
     const updatedUniversity = await University.findByIdAndUpdate(

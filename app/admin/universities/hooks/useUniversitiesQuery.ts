@@ -17,20 +17,27 @@ export interface University {
 }
 
 async function fetchUniversities(): Promise<University[]> {
-  // Use credentials include to ensure cookies are sent
-  const response = await fetch("/api/admin/universities", {
-    credentials: "include"
-  });
-  
-  if (response.status === 401) {
-    throw new Error("Unauthorized. Please make sure you're logged in as an admin.");
+  try {
+    // Use credentials include to ensure cookies are sent
+    const response = await fetch("/api/admin/universities", {
+      credentials: "include"
+    });
+    
+    if (response.status === 401) {
+      throw new Error("Unauthorized. Please make sure you're logged in as an admin.");
+    }
+    
+    if (!response.ok) {
+      // Try to get more detailed error information
+      const errorText = await response.text();
+      throw new Error(`Failed to fetch universities: ${response.status} ${errorText}`);
+    }
+    
+    return response.json();
+  } catch (error) {
+    console.error("Error fetching universities:", error);
+    throw error;
   }
-  
-  if (!response.ok) {
-    throw new Error("Failed to fetch universities");
-  }
-  
-  return response.json();
 }
 
 export function useUniversitiesQuery() {
