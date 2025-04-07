@@ -8,16 +8,18 @@ import { UniversityModal } from "../../components/modals/UniversityModal";
 import { useUniversitiesQuery } from "./hooks/useUniversitiesQuery";
 import { useDeleteUniversity } from "./hooks/useDeleteUniversity";
 import { useToggleUniversityActive } from "./hooks/useToggleUniversityActive";
-import { UniversitiesTable } from "@/app/components/tables/UniversitiesTable";
+import { TanStackUniversitiesTable } from "@/app/components/tables/TanStackUniversitiesTable";
 import { Toaster } from "@/components/ui/toaster";
 import { AdminPageLayout } from "@/components/ui/admin-page-layout";
 import { useSession } from "next-auth/react";
+import { University } from "./hooks/useUniversitiesQuery";
 
 export default function UniversitiesPage() {
   const router = useRouter();
   const { status: authStatus } = useSession();
   const [searchQuery, setSearchQuery] = useState("");
   const [isManuallyFetching, setIsManuallyFetching] = useState(false);
+  const [selectedRows, setSelectedRows] = useState<University[]>([]);
   
   const { 
     data: universities = [], 
@@ -80,6 +82,23 @@ export default function UniversitiesPage() {
     router.push(`/admin/universities/edit/${id}`);
   };
 
+  // Handle bulk delete
+  const handleBulkDelete = async () => {
+    if (selectedRows.length === 0) return;
+    
+    const confirmed = window.confirm(`Are you sure you want to delete ${selectedRows.length} selected ${selectedRows.length > 1 ? 'universities' : 'university'}?`);
+    
+    if (confirmed) {
+      // Process deletion for each selected row
+      for (const row of selectedRows) {
+        await handleDelete(row.id);
+      }
+      
+      // Clear selection after deletion
+      setSelectedRows([]);
+    }
+  };
+
   // Add button to be displayed in the header
   const addButton = (
     <UniversityModal mode="add">
@@ -120,14 +139,42 @@ export default function UniversitiesPage() {
         itemName="university"
       >
         {debugMessage}
-        <UniversitiesTable
-          universities={filteredUniversities}
+
+        {selectedRows.length > 0 && (
+          <div className="mb-4 p-4 bg-muted rounded-md flex items-center justify-between">
+            <p className="text-sm font-medium">
+              {selectedRows.length} {selectedRows.length === 1 ? 'university' : 'universities'} selected
+            </p>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setSelectedRows([])}
+              >
+                Clear Selection
+              </Button>
+              <Button 
+                variant="destructive" 
+                size="sm"
+                onClick={handleBulkDelete}
+              >
+                Delete Selected
+              </Button>
+            </div>
+          </div>
+        )}
+
+        <TanStackUniversitiesTable
+          data={filteredUniversities}
           isLoading={isLoading || isManuallyFetching}
           isError={isError}
           error={error}
           onDelete={handleDelete}
           onToggleActive={handleToggleActive}
           onEdit={handleEdit}
+          onSelectionChange={setSelectedRows}
+          globalFilter={searchQuery}
+          onGlobalFilterChange={setSearchQuery}
           refetch={refetch}
         />
       </AdminPageLayout>
