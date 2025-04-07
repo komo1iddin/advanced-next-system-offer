@@ -171,16 +171,16 @@ export default function LocationsPage() {
   const handleBulkStatusChange = async (active: boolean) => {
     if (selectedRows.length === 0) return;
     
-    const provinces = selectedRows.filter(row => row.type === 'province');
+    const selectedProvinces = selectedRows.filter(row => row.type === 'province');
     const cities = selectedRows.filter(row => row.type === 'city');
     
     const statusText = active ? 'activate' : 'deactivate';
     
-    if (provinces.length > 0 || cities.length > 0) {
+    if (selectedProvinces.length > 0 || cities.length > 0) {
       let message = `Are you sure you want to ${statusText} `;
       
-      if (provinces.length > 0) {
-        message += `${provinces.length} ${provinces.length === 1 ? 'province' : 'provinces'}`;
+      if (selectedProvinces.length > 0) {
+        message += `${selectedProvinces.length} ${selectedProvinces.length === 1 ? 'province' : 'provinces'}`;
         if (cities.length > 0) message += " and ";
       }
       
@@ -194,11 +194,15 @@ export default function LocationsPage() {
       
       if (confirmed) {
         // Update provinces
-        for (const province of provinces) {
-          await updateProvince(province.id, { 
-            name: province.name, 
-            active 
-          });
+        for (const selectedProvince of selectedProvinces) {
+          // Find the complete province data from the provinces array
+          const completeProvince = provinces.find(p => p._id === selectedProvince.id);
+          if (completeProvince) {
+            await updateProvince(selectedProvince.id, { 
+              name: completeProvince.name,
+              active 
+            });
+          }
         }
         
         // Update cities
