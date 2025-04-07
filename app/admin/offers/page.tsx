@@ -6,8 +6,8 @@ import { useSession } from "next-auth/react";
 import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
-import { toast } from "@/components/ui/use-toast";
-import { Toaster } from "@/components/ui/toaster";
+import { toast } from "sonner";
+import { Toaster } from "sonner";
 
 // Import admin page layout
 import { AdminPageLayout } from "@/components/ui/admin-page-layout";
@@ -224,7 +224,7 @@ export default function AdminOffersPage() {
 
   const handleViewOffer = (id: string) => {
     // TODO: Implement view offer page
-    toast.info(`View offer ${id} - This feature is coming soon!`);
+    toast(`View offer ${id} - This feature is coming soon!`);
   };
 
   // Handle form submission
@@ -233,15 +233,15 @@ export default function AdminOffersPage() {
       { id: selectedOfferId, data },
       {
         onSuccess: () => {
-          toast.success(selectedOfferId ? "Offer updated" : "Offer created");
+          toast(selectedOfferId ? "Offer updated" : "Offer created");
           setShowNewOfferModal(false);
           setShowEditOfferModal(false);
           setSelectedOfferId(null);
           setSelectedOffer(null);
           reset();
         },
-        onError: (err) => {
-          toast.error(`Failed to ${selectedOfferId ? "update" : "create"} offer: ${err.message}`);
+        onError: (err: Error) => {
+          toast(`Failed to ${selectedOfferId ? "update" : "create"} offer: ${err.message}`);
         },
       }
     );
@@ -264,11 +264,11 @@ export default function AdminOffersPage() {
       });
     })))
     .then(() => {
-      toast.success(`${ids.length} offers deleted`);
+      toast(`${ids.length} offers deleted`);
       setSelectedRows([]);
     })
-    .catch((err) => {
-      toast.error(`Failed to delete some offers: ${err.message}`);
+    .catch((err: Error) => {
+      toast(`Failed to delete some offers: ${err.message}`);
     })
     .finally(() => {
       setShowBulkDeleteConfirm(false);
@@ -293,11 +293,11 @@ export default function AdminOffersPage() {
       });
     })))
     .then(() => {
-      toast.success(`${ids.length} offers ${active ? 'activated' : 'deactivated'}`);
+      toast(`${ids.length} offers ${active ? 'activated' : 'deactivated'}`);
       setSelectedRows([]);
     })
-    .catch((err) => {
-      toast.error(`Failed to update some offers: ${err.message}`);
+    .catch((err: Error) => {
+      toast(`Failed to update some offers: ${err.message}`);
     })
     .finally(() => {
       setShowBulkStatusConfirm(null);

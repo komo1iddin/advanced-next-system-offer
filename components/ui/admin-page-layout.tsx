@@ -1,3 +1,4 @@
+"use client";
 import React, { ReactNode } from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
@@ -82,45 +83,79 @@ export function AdminCard({
   );
 }
 
-interface AdminPageLayoutProps {
+export interface AdminPageLayoutProps {
   title: string;
-  description?: string;
+  description: string;
+  children: ReactNode;
   actionButton?: ReactNode;
   cardTitle?: string;
   searchTerm?: string;
-  onSearchChange?: (term: string) => void;
+  onSearchChange?: (value: string) => void;
   itemCount?: number;
   itemName?: string;
-  children: ReactNode;
+  bulkActions?: ReactNode;
 }
 
 export function AdminPageLayout({
   title,
   description,
+  children,
   actionButton,
   cardTitle,
-  searchTerm,
+  searchTerm = "",
   onSearchChange,
   itemCount,
   itemName = "item",
-  children
+  bulkActions,
 }: AdminPageLayoutProps) {
   return (
-    <div className="container mx-auto py-8 px-4">
-      <AdminPageHeader
-        title={title}
-        description={description}
-        actionButton={actionButton}
-      />
-      <AdminCard
-        title={cardTitle || `All ${title}`}
-        searchTerm={searchTerm}
-        onSearchChange={onSearchChange}
-        itemCount={itemCount}
-        itemName={itemName}
-      >
-        {children}
-      </AdminCard>
+    <div className="container max-w-7xl mx-auto p-4 space-y-4">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-2 md:space-y-0">
+        <div>
+          <h1 className="text-3xl font-bold">{title}</h1>
+          <p className="text-muted-foreground">{description}</p>
+        </div>
+        {actionButton && (
+          <div className="flex justify-end">
+            {actionButton}
+          </div>
+        )}
+      </div>
+
+      <Card>
+        <CardHeader className="flex flex-col md:flex-row md:items-center space-y-2 md:space-y-0 md:justify-between pb-2 pt-6 px-6">
+          <div>
+            {cardTitle && <CardTitle>{cardTitle}</CardTitle>}
+            {typeof itemCount !== "undefined" && (
+              <CardDescription>
+                {itemCount} {itemCount === 1 ? itemName : `${itemName}s`}
+              </CardDescription>
+            )}
+          </div>
+          <div className="flex flex-col md:flex-row gap-2 items-center">
+            {onSearchChange && (
+              <div className="relative max-w-sm">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="search"
+                  placeholder={`Search ${itemName}s...`}
+                  className="pl-8 w-full md:w-[260px]"
+                  value={searchTerm}
+                  onChange={(e) => onSearchChange(e.target.value)}
+                />
+              </div>
+            )}
+          </div>
+        </CardHeader>
+        {bulkActions && (
+          <div className="flex flex-wrap items-center gap-2 px-6 py-2 border-t">
+            {bulkActions}
+          </div>
+        )}
+        <CardContent className="px-0 pt-0 pb-0 overflow-auto">
+          {children}
+        </CardContent>
+      </Card>
     </div>
   );
 } 

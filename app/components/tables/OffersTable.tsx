@@ -8,18 +8,32 @@ import { Badge } from "@/components/ui/badge";
 // Types for study offers
 export interface StudyOffer {
   _id: string;
-  uniqueId?: string;
   title: string;
+  description: string;
   universityName: string;
+  universityId?: string;
+  location: string;
   degreeLevel: string;
   category: string;
-  location: string;
-  featured: boolean;
+  startDate: string;
+  duration: number;
+  durationUnit: string;
   tuitionFees: {
     amount: number;
     currency: string;
     period: string;
   };
+  scholarshipsAvailable: boolean;
+  applicationDeadline: string;
+  languageRequirements: {
+    language: string;
+    minimumScore: number;
+    testName: string;
+  };
+  featured: boolean;
+  applicationProcess: string;
+  uniqueId?: string;
+  active: boolean;
   createdAt: string;
 }
 
