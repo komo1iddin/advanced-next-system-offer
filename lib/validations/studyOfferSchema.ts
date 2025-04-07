@@ -1,81 +1,75 @@
 import { z } from "zod";
 
 // Basic validation schemas for common fields
-const idSchema = z.string().uuid().optional();
-const nameSchema = z.string().min(1, "Name is required").max(100);
-const descriptionSchema = z.string().min(10, "Description must be at least 10 characters").max(1000);
-const priceSchema = z.number().min(0, "Price must be a positive number");
-const durationSchema = z.number().min(1, "Duration must be at least 1 month").max(48, "Duration cannot exceed 48 months");
-const startDateSchema = z.date().min(new Date(), "Start date must be in the future");
-const endDateSchema = z.date().min(new Date(), "End date must be in the future");
-const statusSchema = z.enum(["DRAFT", "PUBLISHED", "ARCHIVED", "EXPIRED"]);
-const levelSchema = z.enum(["BACHELOR", "MASTER", "PHD"]);
-const languageSchema = z.enum(["ENGLISH", "GERMAN", "FRENCH", "SPANISH", "ITALIAN"]);
-const modeSchema = z.enum(["ON_CAMPUS", "ONLINE", "HYBRID"]);
-const citySchema = z.string().uuid();
-const provinceSchema = z.string().uuid();
-const universitySchema = z.string().uuid();
-const programSchema = z.string().uuid();
-const requirementsSchema = z.array(z.string()).min(1, "At least one requirement is required");
-const benefitsSchema = z.array(z.string()).min(1, "At least one benefit is required");
-const tagsSchema = z.array(z.string()).optional();
-const imagesSchema = z.array(z.string().url()).optional();
-const documentsSchema = z.array(z.string().url()).optional();
-const contactEmailSchema = z.string().email("Invalid email address");
-const contactPhoneSchema = z.string().regex(/^\+?[1-9]\d{1,14}$/, "Invalid phone number");
-const websiteSchema = z.string().url("Invalid URL").optional();
-const applicationDeadlineSchema = z.date().min(new Date(), "Application deadline must be in the future");
-const maxStudentsSchema = z.number().min(1, "Maximum students must be at least 1").optional();
-const minGpaSchema = z.number().min(0, "Minimum GPA must be a positive number").max(4, "Maximum GPA is 4").optional();
-const tuitionFeeSchema = z.number().min(0, "Tuition fee must be a positive number");
-const applicationFeeSchema = z.number().min(0, "Application fee must be a positive number").optional();
+const idSchema = z.string().optional();
+const titleSchema = z.string().min(1, "Title is required").max(100);
+const descriptionSchema = z.string().min(10, "Description must be at least 10 characters").max(5000);
+const universityNameSchema = z.string().min(1, "University name is required").max(100);
+const locationSchema = z.string().min(1, "Location is required").max(100);
+const durationInYearsSchema = z.number().min(0.5, "Duration must be at least 0.5 years");
+const applicationDeadlineSchema = z.date().or(z.string().transform(val => new Date(val)));
+const degreeLevelSchema = z.enum(['Bachelor', 'Master', 'PhD', 'Certificate', 'Diploma', 'Language Course']);
+const programsSchema = z.array(z.string()).min(1, "At least one program is required");
+const languageRequirementsSchema = z.array(
+  z.object({
+    language: z.string(),
+    minimumScore: z.string().optional(),
+    testName: z.string().optional()
+  })
+).min(1, "At least one language requirement is required");
+const admissionRequirementsSchema = z.array(z.string()).min(1, "At least one admission requirement is required");
+const campusFacilitiesSchema = z.array(z.string()).optional();
+const tagsSchema = z.array(z.string()).min(1, "At least one tag is required");
+const colorSchema = z.string().min(1, "Color is required");
+const accentColorSchema = z.string().min(1, "Accent color is required");
+const categorySchema = z.enum(['University', 'College']);
+const sourceSchema = z.enum(['agent', 'university direct', 'public university offer']).default('university direct');
+const tuitionFeesSchema = z.object({
+  amount: z.number().min(0, "Amount must be positive"),
+  currency: z.string(),
+  period: z.string()
+});
 const scholarshipAvailableSchema = z.boolean().default(false);
 const scholarshipDetailsSchema = z.string().optional();
-const accommodationAvailableSchema = z.boolean().default(false);
-const accommodationDetailsSchema = z.string().optional();
-const visaSupportSchema = z.boolean().default(false);
-const visaDetailsSchema = z.string().optional();
+const featuredSchema = z.boolean().default(false);
+const cityIdSchema = z.string().optional();
+const provinceIdSchema = z.string().optional();
+const agentIdSchema = z.string().optional();
+const universityDirectIdSchema = z.string().optional();
+const imagesSchema = z.array(z.string()).optional();
 const createdAtSchema = z.date().optional();
 const updatedAtSchema = z.date().optional();
-const createdBySchema = z.string().uuid().optional();
-const updatedBySchema = z.string().uuid().optional();
+const createdBySchema = z.string().optional();
+const updatedBySchema = z.string().optional();
 
 // Main study offer schema
 export const studyOfferSchema = z.object({
   id: idSchema,
-  name: nameSchema,
+  title: titleSchema,
+  universityName: universityNameSchema,
   description: descriptionSchema,
-  price: priceSchema,
-  duration: durationSchema,
-  startDate: startDateSchema,
-  endDate: endDateSchema,
-  status: statusSchema,
-  level: levelSchema,
-  language: languageSchema,
-  mode: modeSchema,
-  city: citySchema,
-  province: provinceSchema,
-  university: universitySchema,
-  program: programSchema,
-  requirements: requirementsSchema,
-  benefits: benefitsSchema,
-  tags: tagsSchema,
-  images: imagesSchema,
-  documents: documentsSchema,
-  contactEmail: contactEmailSchema,
-  contactPhone: contactPhoneSchema,
-  website: websiteSchema,
-  applicationDeadline: applicationDeadlineSchema,
-  maxStudents: maxStudentsSchema,
-  minGpa: minGpaSchema,
-  tuitionFee: tuitionFeeSchema,
-  applicationFee: applicationFeeSchema,
+  location: locationSchema,
+  cityId: cityIdSchema,
+  provinceId: provinceIdSchema,
+  degreeLevel: degreeLevelSchema,
+  programs: programsSchema,
+  tuitionFees: tuitionFeesSchema,
   scholarshipAvailable: scholarshipAvailableSchema,
   scholarshipDetails: scholarshipDetailsSchema,
-  accommodationAvailable: accommodationAvailableSchema,
-  accommodationDetails: accommodationDetailsSchema,
-  visaSupport: visaSupportSchema,
-  visaDetails: visaDetailsSchema,
+  applicationDeadline: applicationDeadlineSchema,
+  languageRequirements: languageRequirementsSchema,
+  durationInYears: durationInYearsSchema,
+  campusFacilities: campusFacilitiesSchema,
+  admissionRequirements: admissionRequirementsSchema,
+  tags: tagsSchema,
+  color: colorSchema,
+  accentColor: accentColorSchema,
+  category: categorySchema,
+  source: sourceSchema,
+  agentId: agentIdSchema,
+  universityDirectId: universityDirectIdSchema,
+  images: imagesSchema,
+  featured: featuredSchema,
   createdAt: createdAtSchema,
   updatedAt: updatedAtSchema,
   createdBy: createdBySchema,
@@ -97,30 +91,20 @@ export const updateStudyOfferSchema = createStudyOfferSchema.partial();
 // Schema for filtering study offers
 export const studyOfferFilterSchema = z.object({
   search: z.string().optional(),
-  status: statusSchema.optional(),
-  level: levelSchema.optional(),
-  language: languageSchema.optional(),
-  mode: modeSchema.optional(),
-  city: citySchema.optional(),
-  province: provinceSchema.optional(),
-  university: universitySchema.optional(),
-  program: programSchema.optional(),
-  minPrice: priceSchema.optional(),
-  maxPrice: priceSchema.optional(),
-  minDuration: durationSchema.optional(),
-  maxDuration: durationSchema.optional(),
+  degreeLevel: degreeLevelSchema.optional(),
+  category: categorySchema.optional(),
+  city: z.string().optional(),
+  province: z.string().optional(),
+  featured: z.boolean().optional(),
   scholarshipAvailable: z.boolean().optional(),
-  accommodationAvailable: z.boolean().optional(),
-  visaSupport: z.boolean().optional(),
-  startDate: startDateSchema.optional(),
-  endDate: endDateSchema.optional(),
-  applicationDeadline: applicationDeadlineSchema.optional(),
+  minTuition: z.number().optional(),
+  maxTuition: z.number().optional(),
+  minDuration: z.number().optional(),
+  maxDuration: z.number().optional(),
   sortBy: z.enum([
-    "name",
-    "price",
-    "duration",
-    "startDate",
-    "endDate",
+    "title",
+    "durationInYears",
+    "applicationDeadline",
     "createdAt",
     "updatedAt",
   ]).optional(),
