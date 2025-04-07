@@ -13,7 +13,7 @@ import { Toaster } from "sonner";
 import { AdminPageLayout } from "@/components/ui/admin-page-layout";
 
 // Import the offers table component
-import { OffersTable, StudyOffer } from "@/app/components/tables/OffersTable";
+import { StudyOffer } from "@/app/components/tables/OffersTable";
 import { TanStackOffersTable } from "@/app/components/tables/TanStackOffersTable";
 import {
   Dialog,
@@ -23,25 +23,21 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { useStudyOfferForm } from "../hooks/useStudyOfferForm";
-import { useConfirm } from "@/app/hooks/useConfirm";
+
+// Import hooks
+import { useStudyOfferForm } from "@/app/admin/hooks/useStudyOfferForm";
+import { useConfirm } from "@/app/admin/hooks/useConfirm";
 import { 
   useDeleteOffer,
   useGetOffers,
   useCreateUpdateOffer,
   useToggleOfferActive
-} from "../hooks/useOffersQuery";
+} from "@/app/admin/hooks/useOffersQuery";
 
 export default function AdminOffersPage() {
   const router = useRouter();
   const { data: session, status } = useSession();
-  const [offers, setOffers] = useState<StudyOffer[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [isError, setIsError] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [filteredOffers, setFilteredOffers] = useState<StudyOffer[]>([]);
-  const [deleting, setDeleting] = useState<string | null>(null);
   const [showNewOfferModal, setShowNewOfferModal] = useState(false);
   const [showEditOfferModal, setShowEditOfferModal] = useState(false);
   const [selectedOfferId, setSelectedOfferId] = useState<string | null>(null);
@@ -59,10 +55,10 @@ export default function AdminOffersPage() {
 
   // Get data and mutations
   const { 
-    data: offersData = [], 
+    data: offers = [], 
     isLoading, 
-    isError: getOffersError, 
-    error: getOffersErrorDetails, 
+    isError, 
+    error, 
     refetch 
   } = useGetOffers();
   
@@ -83,109 +79,26 @@ export default function AdminOffersPage() {
   const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
   const [showBulkStatusConfirm, setShowBulkStatusConfirm] = useState<{ active: boolean } | null>(null);
 
-  // Fetch all study offers
-  const fetchOffers = async () => {
-    try {
-      setLoading(true);
-      setIsError(false);
-      const response = await fetch('/api/study-offers?limit=100');
-      if (!response.ok) {
-        throw new Error('Failed to fetch study offers');
-      }
-      
-      const data = await response.json();
-      setOffers(data.data);
-      setFilteredOffers(data.data);
-    } catch (error) {
-      console.error('Error fetching offers:', error);
-      setIsError(true);
-      setError(error instanceof Error ? error : new Error('Failed to load study offers'));
-      toast({
-        title: "Error",
-        description: "Failed to load study offers",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // Check auth and fetch data if needed
   useEffect(() => {
-    if (status === "authenticated") {
-      fetchOffers();
+    if (status === "authenticated" && offers.length === 0 && !isLoading) {
+      refetch();
     }
-  }, [status]);
+  }, [status, offers.length, isLoading, refetch]);
 
   // Filter offers based on search query
-  useEffect(() => {
-    if (!searchQuery.trim()) {
-      setFilteredOffers(offers);
-      return;
-    }
-
+  const filteredOffers = offers.filter((offer) => {
+    if (!searchQuery) return true;
+    
     const query = searchQuery.toLowerCase();
-    const filtered = offers.filter(offer => 
+    return (
       offer.title.toLowerCase().includes(query) ||
       offer.universityName.toLowerCase().includes(query) ||
       offer.location.toLowerCase().includes(query) ||
-      offer.category.toLowerCase().includes(query) ||
+      offer.degreeLevel.toLowerCase().includes(query) ||
       (offer.uniqueId && offer.uniqueId.toLowerCase().includes(query))
     );
-    
-    setFilteredOffers(filtered);
-  }, [searchQuery, offers]);
-
-  // Handle delete offer
-  const handleDelete = async (id: string) => {
-    try {
-      setDeleting(id);
-      
-      const response = await fetch(`/api/study-offers/${id}`, {
-        method: 'DELETE',
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to delete study offer');
-      }
-      
-      // Remove the deleted offer from state
-      setOffers(offers.filter(offer => offer._id !== id));
-      setFilteredOffers(filteredOffers.filter(offer => offer._id !== id));
-      
-      toast({
-        title: "Success",
-        description: "Study offer has been deleted successfully",
-      });
-      
-    } catch (error) {
-      console.error('Error deleting study offer:', error);
-      toast({
-        title: "Error",
-        description: "Failed to delete study offer",
-        variant: "destructive",
-      });
-    } finally {
-      setDeleting(null);
-    }
-  };
-
-  // Handle edit
-  const handleEdit = (id: string) => {
-    router.push(`/admin/edit-offer/${id}`);
-  };
-
-  // Handle view
-  const handleView = (id: string) => {
-    router.push(`/offer/${id}`);
-  };
-
-  // Action button for the header
-  const actionButton = (
-    <Button onClick={() => router.push("/admin/add-offer")}>
-      <Plus className="mr-2 h-4 w-4" />
-      Add New Offer
-    </Button>
-  );
+  });
 
   // CRUD handlers
   const handleEditOffer = (id: string) => {
@@ -304,6 +217,21 @@ export default function AdminOffersPage() {
     });
   };
 
+  // Action button for the header
+  const actionButton = (
+    <Button
+      onClick={() => {
+        reset(); // Reset form
+        setSelectedOfferId(null);
+        setSelectedOffer(null);
+        setShowNewOfferModal(true);
+      }}
+    >
+      <Plus className="mr-2 h-4 w-4" />
+      Add New Offer
+    </Button>
+  );
+
   if (status === "loading") {
     return (
       <div className="container mx-auto py-8 px-4 text-center">
@@ -357,8 +285,8 @@ export default function AdminOffersPage() {
         <TanStackOffersTable
           data={filteredOffers}
           isLoading={isLoading}
-          isError={getOffersError}
-          error={getOffersErrorDetails}
+          isError={isError}
+          error={error}
           onEdit={handleEditOffer}
           onDelete={handleDeleteOffer}
           onView={handleViewOffer}
