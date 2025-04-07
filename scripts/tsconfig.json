@@ -9,8 +9,12 @@
     "skipLibCheck": true,
     "resolveJsonModule": true,
     "outDir": "../dist/scripts",
-    "rootDir": "."
+    "rootDir": "..",
+    "baseUrl": "..",
+    "paths": {
+      "@/*": ["*"]
+    }
   },
-  "include": ["./**/*.ts"],
+  "include": ["./**/*.ts", "../lib/**/*.ts"],
   "exclude": ["node_modules"]
 } 

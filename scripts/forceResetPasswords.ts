@@ -2,6 +2,8 @@ import mongoose from 'mongoose';
 import { randomBytes } from 'crypto';
 import dotenv from 'dotenv';
 import nodemailer from 'nodemailer';
+import './loadModels'; // Load all models first
+import User from '../lib/models/User'; // Now import specific models
 
 // Load environment variables
 dotenv.config();
@@ -46,10 +48,7 @@ async function forcePasswordReset() {
     // Connect to the database
     await connectToDatabase();
     
-    // Get the User model
-    const User = mongoose.model('User');
-    
-    // Find all active users
+    // Find all active users - using the imported User model
     const users = await User.find({ status: 'active' });
     console.log(`Found ${users.length} active users to process`);
     

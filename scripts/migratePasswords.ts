@@ -3,6 +3,8 @@ import { scrypt, randomBytes } from 'crypto';
 import { promisify } from 'util';
 import bcrypt from 'bcrypt';
 import dotenv from 'dotenv';
+import './loadModels'; // Load all models first
+import User from '../lib/models/User'; // Now import specific models
 
 // Load environment variables
 dotenv.config();
@@ -46,10 +48,7 @@ async function migratePasswords() {
     // Connect to the database
     await connectToDatabase();
     
-    // Get the User model
-    const User = mongoose.model('User');
-    
-    // Find all users
+    // Find all users using the imported User model
     const users = await User.find({});
     console.log(`Found ${users.length} users to migrate`);
     
