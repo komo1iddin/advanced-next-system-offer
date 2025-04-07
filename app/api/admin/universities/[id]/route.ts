@@ -55,7 +55,12 @@ export async function PUT(request: Request, context: { params: { id: string } })
         worldRanking: worldRanking || null
       },
       { new: true }
-    ).populate('locationId');
+    ).populate({
+      path: 'locationId',
+      populate: {
+        path: 'provinceId'
+      }
+    });
     
     // Format the response
     const formattedUniversity = {
@@ -68,6 +73,7 @@ export async function PUT(request: Request, context: { params: { id: string } })
         city: location.name,
         province: location.provinceId?.name || "Unknown Province"
       },
+      active: updatedUniversity.active || false,
       createdAt: updatedUniversity.createdAt,
       updatedAt: updatedUniversity.updatedAt
     };
@@ -75,6 +81,61 @@ export async function PUT(request: Request, context: { params: { id: string } })
     return NextResponse.json(formattedUniversity);
   } catch (error) {
     console.error("Error updating university:", error);
+    return new NextResponse("Internal Server Error", { status: 500 });
+  }
+}
+
+export async function PATCH(request: Request, context: { params: { id: string } }) {
+  const { id } = await context.params;
+
+  try {
+    // Validate admin access
+    const session = await validateAdminAccess();
+    if (!session) {
+      return new NextResponse("Unauthorized", { status: 401 });
+    }
+
+    // Connect to the database
+    await connectToDatabase();
+    
+    // Parse the request body
+    const body = await request.json();
+    
+    // Update specific fields (like active status)
+    const updatedUniversity = await University.findByIdAndUpdate(
+      id,
+      { ...body },
+      { new: true }
+    ).populate({
+      path: 'locationId',
+      populate: {
+        path: 'provinceId'
+      }
+    });
+    
+    if (!updatedUniversity) {
+      return new NextResponse("University not found", { status: 404 });
+    }
+    
+    // Format the response
+    const formattedUniversity = {
+      id: updatedUniversity._id.toString(),
+      name: updatedUniversity.name,
+      localRanking: updatedUniversity.localRanking,
+      worldRanking: updatedUniversity.worldRanking,
+      location: {
+        id: updatedUniversity.locationId?._id.toString() || "",
+        city: updatedUniversity.locationId?.name || "Unknown City",
+        province: updatedUniversity.locationId?.provinceId?.name || "Unknown Province"
+      },
+      active: updatedUniversity.active || false,
+      createdAt: updatedUniversity.createdAt,
+      updatedAt: updatedUniversity.updatedAt
+    };
+    
+    return NextResponse.json(formattedUniversity);
+  } catch (error) {
+    console.error("Error updating university status:", error);
     return new NextResponse("Internal Server Error", { status: 500 });
   }
 }

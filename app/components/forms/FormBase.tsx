@@ -5,6 +5,7 @@ import { useForm, UseFormReturn, FieldValues, FormProvider } from "react-hook-fo
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { cn } from "@/app/lib/utils";
+import { Button } from "@/components/ui/button";
 
 export interface FormBaseProps<TFieldValues extends FieldValues> {
   /**
@@ -94,6 +95,29 @@ export function FormBase<TFieldValues extends FieldValues>({
         onSubmit={onSubmit ? form.handleSubmit(handleSubmit) : undefined}
       >
         {children(form)}
+        
+        {showFooter && (
+          <div className="flex justify-end gap-2 pt-4 border-t">
+            {onCancel && (
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={onCancel}
+                disabled={isSubmitting}
+              >
+                {cancelText}
+              </Button>
+            )}
+            {onSubmit && (
+              <Button 
+                type="submit" 
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? "Processing..." : submitText}
+              </Button>
+            )}
+          </div>
+        )}
       </form>
     </FormProvider>
   );

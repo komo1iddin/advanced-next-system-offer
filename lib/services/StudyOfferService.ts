@@ -1,7 +1,7 @@
 import { dbManager } from '../db/mongoose';
 import StudyOffer from '../models/StudyOffer';
-import { CacheService } from './CacheService';
-import { LogService } from './LogService';
+import { cacheService } from './CacheService';
+import { logService } from './LogService';
 import { AppError } from '../utils/AppError';
 
 export class StudyOfferService {
@@ -13,53 +13,23 @@ export class StudyOfferService {
       const cacheKey = `${this.CACHE_PREFIX}list:${JSON.stringify(query)}`;
       
       // Try to get from cache first
-      const cachedData = await CacheService.get(cacheKey);
+      const cachedData = await cacheService.get(cacheKey);
       if (cachedData) {
         return cachedData;
       }
 
-      // Build optimized query
-      const { page = 1, limit = 10, search, ...filters } = query;
-      const skip = (page - 1) * limit;
+      // If not in cache, fetch from database
+      const studyOffers = await StudyOffer.find(query)
+        .sort({ createdAt: -1 })
+        .lean();
 
-      // Create base query
-      const baseQuery = StudyOffer.find(filters);
+      // Cache the results
+      await cacheService.set(cacheKey, studyOffers, this.CACHE_TTL);
 
-      // Add text search if provided
-      if (search) {
-        baseQuery.find({ $text: { $search: search } });
-      }
-
-      // Add sorting
-      baseQuery.sort({ createdAt: -1 });
-
-      // Add pagination
-      baseQuery.skip(skip).limit(limit);
-
-      // Add field selection
-      baseQuery.select('-__v');
-
-      // Add population
-      baseQuery.populate('cityId', 'name')
-               .populate('provinceId', 'name code')
-               .populate('agentId', 'name email')
-               .populate('universityDirectId', 'name email');
-
-      // Execute query
-      const [data, total] = await Promise.all([
-        baseQuery.exec(),
-        StudyOffer.countDocuments(filters)
-      ]);
-
-      const result = { data, total };
-
-      // Cache the result
-      await CacheService.set(cacheKey, result, this.CACHE_TTL);
-
-      return result;
+      return studyOffers;
     } catch (error) {
-      LogService.error('Error getting study offers:', error);
-      throw new AppError('DATABASE_ERROR', 'Failed to get study offers', 500, error);
+      logService.error('Error in getStudyOffers:', error);
+      throw new AppError('Failed to fetch study offers', 500);
     }
   }
 
@@ -68,107 +38,106 @@ export class StudyOfferService {
       const cacheKey = `${this.CACHE_PREFIX}${id}`;
       
       // Try to get from cache first
-      const cachedData = await CacheService.get(cacheKey);
+      const cachedData = await cacheService.get(cacheKey);
       if (cachedData) {
         return cachedData;
       }
 
-      // Build optimized query
-      const studyOffer = await StudyOffer.findById(id)
-        .select('-__v')
-        .populate('cityId', 'name')
-        .populate('provinceId', 'name code')
-        .populate('agentId', 'name email')
-        .populate('universityDirectId', 'name email')
-        .lean();
-
-      if (studyOffer) {
-        // Cache the result
-        await CacheService.set(cacheKey, studyOffer, this.CACHE_TTL);
+      // If not in cache, fetch from database
+      const studyOffer = await StudyOffer.findById(id).lean();
+      
+      if (!studyOffer) {
+        throw new AppError('Study offer not found', 404);
       }
+
+      // Cache the result
+      await cacheService.set(cacheKey, studyOffer, this.CACHE_TTL);
 
       return studyOffer;
     } catch (error) {
-      LogService.error('Error getting study offer:', error);
-      throw new AppError('DATABASE_ERROR', 'Failed to get study offer', 500, error);
+      if (error instanceof AppError) {
+        throw error;
+      }
+      logService.error('Error in getStudyOfferById:', error);
+      throw new AppError('Failed to fetch study offer', 500);
     }
   }
 
   static async createStudyOffer(data: any, user: any) {
     try {
-      // Use transaction for data consistency
-      return await dbManager.withTransaction(async (session) => {
-        // Create study offer
-        const studyOffer = new StudyOffer({
-          ...data,
-          createdBy: user._id
-        });
-
-        // Save with transaction
-        await studyOffer.save({ session });
-
-        // Clear relevant cache
-        await CacheService.clearPattern(`${this.CACHE_PREFIX}list:*`);
-
-        return studyOffer;
+      const studyOffer = new StudyOffer({
+        ...data,
+        createdBy: user.id
       });
+
+      await studyOffer.save();
+
+      // Clear the list cache
+      await cacheService.clearPattern(`${this.CACHE_PREFIX}list:*`);
+
+      return studyOffer;
     } catch (error) {
-      LogService.error('Error creating study offer:', error);
-      throw new AppError('DATABASE_ERROR', 'Failed to create study offer', 500, error);
+      logService.error('Error in createStudyOffer:', error);
+      throw new AppError('Failed to create study offer', 500);
     }
   }
 
   static async updateStudyOffer(id: string, data: any, user: any) {
     try {
-      // Use transaction for data consistency
-      return await dbManager.withTransaction(async (session) => {
-        // Find and update study offer
-        const studyOffer = await StudyOffer.findByIdAndUpdate(
-          id,
-          {
-            ...data,
-            updatedBy: user._id,
-            updatedAt: new Date()
-          },
-          { new: true, session }
-        );
+      const studyOffer = await StudyOffer.findById(id);
+      
+      if (!studyOffer) {
+        throw new AppError('Study offer not found', 404);
+      }
 
-        if (!studyOffer) {
-          return null;
-        }
+      // Check if user has permission to update
+      if (studyOffer.createdBy.toString() !== user.id) {
+        throw new AppError('Unauthorized to update this study offer', 403);
+      }
 
-        // Clear relevant cache
-        await CacheService.clearPattern(`${this.CACHE_PREFIX}${id}`);
-        await CacheService.clearPattern(`${this.CACHE_PREFIX}list:*`);
+      Object.assign(studyOffer, data);
+      await studyOffer.save();
 
-        return studyOffer;
-      });
+      // Clear both the specific cache and list cache
+      await cacheService.del(`${this.CACHE_PREFIX}${id}`);
+      await cacheService.clearPattern(`${this.CACHE_PREFIX}list:*`);
+
+      return studyOffer;
     } catch (error) {
-      LogService.error('Error updating study offer:', error);
-      throw new AppError('DATABASE_ERROR', 'Failed to update study offer', 500, error);
+      if (error instanceof AppError) {
+        throw error;
+      }
+      logService.error('Error in updateStudyOffer:', error);
+      throw new AppError('Failed to update study offer', 500);
     }
   }
 
   static async deleteStudyOffer(id: string, user: any) {
     try {
-      // Use transaction for data consistency
-      return await dbManager.withTransaction(async (session) => {
-        // Find and delete study offer
-        const studyOffer = await StudyOffer.findByIdAndDelete(id, { session });
+      const studyOffer = await StudyOffer.findById(id);
+      
+      if (!studyOffer) {
+        throw new AppError('Study offer not found', 404);
+      }
 
-        if (!studyOffer) {
-          return false;
-        }
+      // Check if user has permission to delete
+      if (studyOffer.createdBy.toString() !== user.id) {
+        throw new AppError('Unauthorized to delete this study offer', 403);
+      }
 
-        // Clear relevant cache
-        await CacheService.clearPattern(`${this.CACHE_PREFIX}${id}`);
-        await CacheService.clearPattern(`${this.CACHE_PREFIX}list:*`);
+      await studyOffer.deleteOne();
 
-        return true;
-      });
+      // Clear both the specific cache and list cache
+      await cacheService.del(`${this.CACHE_PREFIX}${id}`);
+      await cacheService.clearPattern(`${this.CACHE_PREFIX}list:*`);
+
+      return { success: true };
     } catch (error) {
-      LogService.error('Error deleting study offer:', error);
-      throw new AppError('DATABASE_ERROR', 'Failed to delete study offer', 500, error);
+      if (error instanceof AppError) {
+        throw error;
+      }
+      logService.error('Error in deleteStudyOffer:', error);
+      throw new AppError('Failed to delete study offer', 500);
     }
   }
 } 

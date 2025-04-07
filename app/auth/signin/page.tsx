@@ -4,17 +4,15 @@ import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { z } from "zod";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { toast } from "@/components/ui/use-toast";
 import { Toaster } from "@/components/ui/toaster";
 import { School } from "lucide-react";
 import { FormBase } from "@/app/components/forms/FormBase";
-import { FormTextField } from "@/app/components/forms/fields/FormTextField";
+import FormTextField from "@/app/components/forms/fields/FormTextField";
+import { FormRow } from "@/app/components/forms/FormRow";
+import { FormSection } from "@/app/components/forms/FormSection";
 
 // Form validation schema
 const formSchema = z.object({
@@ -27,41 +25,35 @@ type FormValues = z.infer<typeof formSchema>;
 export default function SignInPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [loading, setLoading] = useState(false);
-  const callbackUrl = searchParams.get("callbackUrl") || "/";
-  const error = searchParams.get("error");
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Initialize form
-  const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      email: "",
-      password: "",
-    },
-  });
-
-  // Handle form submission
-  const onSubmit = async (data: FormValues) => {
+  const handleSubmit = async (data: FormValues) => {
     try {
-      setLoading(true);
+      setIsLoading(true);
       
       const result = await signIn("credentials", {
-        redirect: false,
         email: data.email,
         password: data.password,
+        redirect: false,
       });
 
       if (result?.error) {
         toast({
-          title: "Authentication Error",
+          title: "Sign in failed",
           description: result.error,
           variant: "destructive",
         });
-      } else {
-        // Redirect on successful sign in
-        router.push(callbackUrl);
-        router.refresh();
+        return;
       }
+
+      toast({
+        title: "Success",
+        description: "You have been signed in successfully.",
+      });
+
+      // Redirect to the callback URL or home page
+      const callbackUrl = searchParams.get("callbackUrl") || "/";
+      router.push(callbackUrl);
     } catch (error) {
       toast({
         title: "Error",
@@ -69,92 +61,65 @@ export default function SignInPage() {
         variant: "destructive",
       });
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className="container mx-auto flex items-center justify-center min-h-screen py-12">
+    <div className="container flex h-screen w-screen flex-col items-center justify-center">
       <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1 text-center">
-          <div className="flex justify-center mb-4">
-            <School className="h-12 w-12 text-primary" />
+        <CardHeader className="space-y-1">
+          <div className="flex items-center justify-center">
+            <School className="h-8 w-8" />
           </div>
-          <CardTitle className="text-2xl">Sign in to StudyBridge</CardTitle>
-          <CardDescription>
-            Enter your credentials to access the platform
+          <CardTitle className="text-2xl text-center">Sign in to your account</CardTitle>
+          <CardDescription className="text-center">
+            Enter your credentials to access your account
           </CardDescription>
-          {error && (
-            <div className="p-2 mt-2 text-sm text-red-600 bg-red-50 rounded-md">
-              {error === "CredentialsSignin" 
-                ? "Invalid email or password" 
-                : "An error occurred. Please try again."}
-            </div>
-          )}
         </CardHeader>
         <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input 
-                        placeholder="Enter your email" 
-                        {...field} 
-                        type="email"
-                        disabled={loading}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Password</FormLabel>
-                    <FormControl>
-                      <Input 
-                        placeholder="Enter your password" 
-                        {...field} 
-                        type="password"
-                        disabled={loading}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? "Signing in..." : "Sign In"}
-              </Button>
-            </form>
-          </Form>
+          <FormBase
+            schema={formSchema}
+            defaultValues={{
+              email: "",
+              password: "",
+            }}
+            onSubmit={handleSubmit}
+            isSubmitting={isLoading}
+            submitText={isLoading ? "Signing in..." : "Sign in"}
+          >
+            {(form) => (
+              <FormSection>
+                <FormRow>
+                  <FormTextField
+                    name="email"
+                    label="Email"
+                    type="email"
+                    placeholder="john@example.com"
+                    required
+                  />
+                </FormRow>
+                <FormRow>
+                  <FormTextField
+                    name="password"
+                    label="Password"
+                    type="password"
+                    required
+                  />
+                </FormRow>
+              </FormSection>
+            )}
+          </FormBase>
         </CardContent>
-        <CardFooter className="flex flex-col gap-2">
-          <div className="text-center text-sm text-muted-foreground">
-            Don&apos;t have an account?{" "}
+        <CardFooter className="flex flex-col space-y-4">
+          <div className="text-sm text-center text-muted-foreground">
+            Don't have an account?{" "}
             <Button
               variant="link"
-              className="p-0 h-auto"
+              className="p-0 h-auto font-normal"
               onClick={() => router.push("/auth/register")}
             >
-              Create one
-            </Button>
-          </div>
-          <div className="text-center text-sm text-muted-foreground">
-            <Button
-              variant="link"
-              className="p-0 h-auto"
-              onClick={() => router.push("/")}
-            >
-              Back to home
+              Register
             </Button>
           </div>
         </CardFooter>

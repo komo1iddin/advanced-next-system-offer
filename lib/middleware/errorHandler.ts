@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
 import { ZodError } from 'zod';
 import { AppError } from '../utils/AppError';
-import { LogService } from '../services/LogService';
+import { logService } from '../services/LogService';
 
 export class ErrorHandler {
   static handle(error: unknown) {
     // Log the error
-    LogService.error('Error occurred:', error);
+    logService.error('Error occurred:', error);
 
     // Handle specific error types
     if (error instanceof AppError) {
@@ -14,7 +14,7 @@ export class ErrorHandler {
         { 
           success: false, 
           error: {
-            code: error.code,
+            code: error.statusCode,
             message: error.message,
             details: error.details
           }
@@ -23,13 +23,14 @@ export class ErrorHandler {
       );
     }
 
+    // Handle Zod validation errors
     if (error instanceof ZodError) {
       return NextResponse.json(
-        { 
-          success: false, 
+        {
+          success: false,
           error: {
-            code: 'VALIDATION_ERROR',
-            message: 'Validation failed',
+            code: 400,
+            message: 'Validation error',
             details: error.errors
           }
         },
@@ -37,26 +38,14 @@ export class ErrorHandler {
       );
     }
 
-    if (error instanceof Error) {
-      return NextResponse.json(
-        { 
-          success: false, 
-          error: {
-            code: 'INTERNAL_ERROR',
-            message: error.message || 'An unexpected error occurred'
-          }
-        },
-        { status: 500 }
-      );
-    }
-
     // Handle unknown errors
     return NextResponse.json(
-      { 
-        success: false, 
+      {
+        success: false,
         error: {
-          code: 'UNKNOWN_ERROR',
-          message: 'An unknown error occurred'
+          code: 500,
+          message: 'Internal server error',
+          details: error instanceof Error ? error.message : 'Unknown error occurred'
         }
       },
       { status: 500 }

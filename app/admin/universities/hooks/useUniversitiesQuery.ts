@@ -13,6 +13,7 @@ export interface University {
   localRanking: number | null;
   worldRanking: number | null;
   location: Location;
+  active: boolean;
 }
 
 async function fetchUniversities(): Promise<University[]> {

@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { AppError } from '../utils/error';
 import { logService } from '../services/LogService';
 
@@ -16,9 +16,15 @@ const defaultConfig: RateLimitConfig = {
 
 const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
 
-export async function rateLimit(req: NextRequest, config: Partial<RateLimitConfig> = {}) {
+export async function rateLimit(req: NextRequest, config: Partial<RateLimitConfig> = {}): Promise<NextResponse | null> {
   const finalConfig = { ...defaultConfig, ...config };
-  const ip = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown';
+  
+  // Get IP from various headers or fallback to connection remote address
+  const forwardedFor = req.headers.get('x-forwarded-for');
+  const realIp = req.headers.get('x-real-ip');
+  const ip = forwardedFor ? forwardedFor.split(',')[0].trim() : 
+             realIp ? realIp : 
+             'unknown';
 
   const now = Date.now();
   const windowStart = now - finalConfig.windowMs;
@@ -30,17 +36,11 @@ export async function rateLimit(req: NextRequest, config: Partial<RateLimitConfi
     }
   }
 
-  // Get or initialize the rate limit entry
+  // Get or create entry for this IP
   let entry = rateLimitStore.get(ip);
-  if (!entry) {
+  if (!entry || entry.resetTime < windowStart) {
     entry = { count: 0, resetTime: now + finalConfig.windowMs };
     rateLimitStore.set(ip, entry);
-  }
-
-  // Check if the window has reset
-  if (entry.resetTime < now) {
-    entry.count = 0;
-    entry.resetTime = now + finalConfig.windowMs;
   }
 
   // Increment the counter
@@ -49,30 +49,35 @@ export async function rateLimit(req: NextRequest, config: Partial<RateLimitConfi
   // Check if the limit has been exceeded
   if (entry.count > finalConfig.max) {
     logService.warn('Rate limit exceeded', { ip, count: entry.count });
-    throw new AppError(429, finalConfig.message);
+    throw new AppError(429, finalConfig.message || 'Too many requests');
   }
 
-  // Add rate limit headers to the response
-  const headers = new Headers();
-  headers.set('X-RateLimit-Limit', finalConfig.max.toString());
-  headers.set('X-RateLimit-Remaining', (finalConfig.max - entry.count).toString());
-  headers.set('X-RateLimit-Reset', entry.resetTime.toString());
+  // Create response with rate limit headers
+  const response = NextResponse.next();
+  response.headers.set('X-RateLimit-Limit', finalConfig.max.toString());
+  response.headers.set('X-RateLimit-Remaining', (finalConfig.max - entry.count).toString());
+  response.headers.set('X-RateLimit-Reset', entry.resetTime.toString());
 
-  return headers;
+  return response;
+}
+
+// Helper function to create rate limiters with specific configs
+function createRateLimiter(config: RateLimitConfig) {
+  return (req: NextRequest) => rateLimit(req, config);
 }
 
 // Default rate limiters
-export const defaultRateLimit = rateLimit({
+export const defaultRateLimit = createRateLimiter({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100 // 100 requests per window
 });
 
-export const strictRateLimit = rateLimit({
+export const strictRateLimit = createRateLimiter({
   windowMs: 60 * 60 * 1000, // 1 hour
   max: 50 // 50 requests per window
 });
 
-export const adminRateLimit = rateLimit({
+export const adminRateLimit = createRateLimiter({
   windowMs: 60 * 60 * 1000, // 1 hour
   max: 1000 // 1000 requests per window
 }); 

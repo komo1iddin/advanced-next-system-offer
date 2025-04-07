@@ -18,8 +18,14 @@ export async function GET() {
     
     try {
       // Fetch universities with their location information
+      // Properly populate the nested provinceId field
       const universities = await University.find()
-        .populate('locationId')
+        .populate({
+          path: 'locationId',
+          populate: {
+            path: 'provinceId'
+          }
+        })
         .sort({ name: 1 });
       
       // Format the universities for the frontend
@@ -33,6 +39,7 @@ export async function GET() {
           city: university.locationId?.name || "Unknown City",
           province: university.locationId?.provinceId?.name || "Unknown Province"
         },
+        active: university.active || false,
         createdAt: university.createdAt,
         updatedAt: university.updatedAt
       }));

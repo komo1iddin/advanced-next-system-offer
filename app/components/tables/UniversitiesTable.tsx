@@ -1,10 +1,11 @@
 import React from "react";
 import { University } from "@/app/admin/universities/hooks/useUniversitiesQuery";
-import { AdminTable, ActionButtons, TypeBadge } from "./AdminTable";
+import { AdminTable, ActionButtons, StatusBadge } from "./AdminTable";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, School } from "lucide-react";
 import { UniversityModal } from "@/app/components/modals/UniversityModal";
+import { Switch } from "@/components/ui/switch";
 
 interface UniversitiesTableProps {
   universities: University[];
@@ -12,6 +13,8 @@ interface UniversitiesTableProps {
   isError: boolean;
   error: unknown;
   onDelete: (id: string) => Promise<void>;
+  onToggleActive?: (id: string, active: boolean) => void;
+  onEdit?: (id: string) => void;
   refetch?: () => void;
 }
 
@@ -21,13 +24,17 @@ export function UniversitiesTable({
   isError,
   error,
   onDelete,
+  onToggleActive,
+  onEdit,
   refetch
 }: UniversitiesTableProps) {
   const columns = [
     {
       header: "Name",
       key: "name",
-      cell: (university: University) => university.name
+      cell: (university: University) => (
+        <span className="font-medium">{university.name}</span>
+      )
     },
     {
       header: "City",
@@ -52,27 +59,50 @@ export function UniversitiesTable({
       cell: (university: University) => university.worldRanking || "N/A"
     },
     {
+      header: "Status",
+      key: "active",
+      cell: (university: University) => (
+        onToggleActive ? (
+          <Switch
+            checked={university.active}
+            onCheckedChange={() => onToggleActive(university.id, !university.active)}
+          />
+        ) : (
+          <StatusBadge active={university.active} />
+        )
+      )
+    },
+    {
       header: "Actions",
       key: "actions",
       className: "text-right",
       cell: (university: University) => (
         <div className="flex items-center justify-end gap-2">
-          <UniversityModal mode="edit" university={university}>
-            <Button variant="ghost" size="icon">
-              <Pencil className="w-4 h-4" />
-              <span className="sr-only">Edit</span>
+          {onEdit ? (
+            <Button 
+              variant="outline" 
+              size="icon"
+              onClick={() => onEdit(university.id)}
+            >
+              <Pencil className="h-4 w-4" />
             </Button>
-          </UniversityModal>
+          ) : (
+            <UniversityModal mode="edit" university={university}>
+              <Button variant="outline" size="icon">
+                <Pencil className="w-4 h-4" />
+                <span className="sr-only">Edit</span>
+              </Button>
+            </UniversityModal>
+          )}
           
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button
-                variant="ghost"
+                variant="outline"
                 size="icon"
-                className="text-destructive hover:text-destructive"
+                className="text-red-500 hover:text-red-600"
               >
-                <Trash2 className="w-4 h-4" />
-                <span className="sr-only">Delete</span>
+                <Trash2 className="h-4 w-4" />
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
@@ -85,8 +115,8 @@ export function UniversitiesTable({
               <AlertDialogFooter>
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
                 <AlertDialogAction
+                  className="bg-red-500 hover:bg-red-600"
                   onClick={() => onDelete(university.id)}
-                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                 >
                   Delete
                 </AlertDialogAction>
@@ -99,9 +129,10 @@ export function UniversitiesTable({
   ];
 
   const emptyState = (
-    <div className="flex flex-col items-center justify-center py-6 gap-4">
-      <p className="text-muted-foreground text-sm">
-        No universities found. Use the "Add University" button above to create one.
+    <div className="text-center py-8">
+      <School className="mx-auto h-12 w-12 text-muted-foreground/50" />
+      <p className="mt-2 text-muted-foreground">
+        No universities found. Add your first university to get started.
       </p>
     </div>
   );

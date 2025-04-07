@@ -5,6 +5,7 @@ export interface IUniversity extends Document {
   localRanking: number | null;
   worldRanking: number | null;
   locationId: mongoose.Schema.Types.ObjectId;
+  active: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -19,6 +20,7 @@ const UniversitySchema: Schema = new Schema(
       ref: 'City',
       required: true 
     },
+    active: { type: Boolean, default: true },
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now }
   },
