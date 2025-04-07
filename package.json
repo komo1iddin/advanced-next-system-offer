@@ -9,7 +9,8 @@
     "lint": "next lint",
     "seed:contacts": "node scripts/seed-contacts.js",
     "migrate:passwords": "npx ts-node --compiler-options '{\"module\":\"CommonJS\"}' scripts/migratePasswords.ts",
-    "reset:passwords": "npx ts-node --compiler-options '{\"module\":\"CommonJS\"}' scripts/forceResetPasswords.ts"
+    "reset:passwords": "npx ts-node --compiler-options '{\"module\":\"CommonJS\"}' scripts/forceResetPasswords.ts",
+    "check:users": "npx ts-node --compiler-options '{\"module\":\"CommonJS\"}' scripts/checkUsers.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

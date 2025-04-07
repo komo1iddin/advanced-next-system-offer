@@ -48,9 +48,28 @@ async function forcePasswordReset() {
     // Connect to the database
     await connectToDatabase();
     
-    // Find all active users - using the imported User model
-    const users = await User.find({ status: 'active' });
-    console.log(`Found ${users.length} active users to process`);
+    // Debug: Check what collections exist in the database
+    if (mongoose.connection.db) {
+      const collections = await mongoose.connection.db.listCollections().toArray();
+      console.log('Collections in database:', collections.map(c => c.name));
+    } else {
+      console.log('Database connection not fully established');
+    }
+    
+    // Find all users, not just active ones
+    const users = await User.find({});
+    
+    // Debug: Log users found
+    console.log('Users found:', users.length);
+    if (users.length > 0) {
+      users.forEach(user => {
+        console.log(`- User: ${user.email}, Role: ${user.role}, ID: ${user._id}`);
+      });
+    } else {
+      console.log('No users found in the database at all!');
+    }
+    
+    console.log(`Processing ${users.length} users for password reset`);
     
     // Process each user
     let successCount = 0;
@@ -63,10 +82,27 @@ async function forcePasswordReset() {
         const resetExpires = new Date();
         resetExpires.setHours(resetExpires.getHours() + 24); // Token valid for 24 hours
         
-        // Update user with reset token
-        user.resetPasswordToken = resetToken;
-        user.resetPasswordExpires = resetExpires;
-        await user.save();
+        // Use direct MongoDB update to bypass Mongoose validation
+        // This avoids the firstName/lastName validation issue
+        if (mongoose.connection.db) {
+          const result = await mongoose.connection.db.collection('users').updateOne(
+            { _id: user._id },
+            { 
+              $set: { 
+                resetPasswordToken: resetToken,
+                resetPasswordExpires: resetExpires
+              } 
+            }
+          );
+          
+          if (result.modifiedCount === 0) {
+            console.log(`No changes made to ${user.email}`);
+            failCount++;
+            continue;
+          }
+        } else {
+          throw new Error('Database connection not established');
+        }
         
         // Send password reset email
         const resetUrl = `${process.env.FRONTEND_URL}/auth/reset-password?token=${resetToken}`;
@@ -78,6 +114,7 @@ async function forcePasswordReset() {
             subject: 'Password Reset Required',
             html: `
               <h1>Password Reset Required</h1>
+              <p>Hello ${user.name || 'User'},</p>
               <p>We've updated our password security system and need you to reset your password.</p>
               <p>Please click the link below to set a new password:</p>
               <a href="${resetUrl}">Reset Password</a>
