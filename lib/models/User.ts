@@ -8,8 +8,9 @@ const scryptAsync = promisify(scrypt);
 export interface IUser extends Document {
   email: string;
   password: string;
-  firstName: string;
-  lastName: string;
+  name?: string;
+  firstName?: string;
+  lastName?: string;
   role: 'super-admin' | 'admin' | 'manager' | 'user';
   status: 'active' | 'inactive' | 'suspended';
   phone?: string;
@@ -40,15 +41,19 @@ const UserSchema: Schema = new Schema(
       required: true,
       minlength: [8, 'Password must be at least 8 characters long']
     },
+    name: {
+      type: String,
+      trim: true
+    },
     firstName: {
       type: String,
-      required: true,
+      required: false,
       trim: true,
       index: true
     },
     lastName: {
       type: String,
-      required: true,
+      required: false,
       trim: true,
       index: true
     },

@@ -15,7 +15,6 @@ import { FormSection } from "@/app/components/forms/FormSection";
 
 // Form validation schema
 const formSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().email("Invalid email address"),
   password: z.string().min(8, "Password must be at least 8 characters"),
   confirmPassword: z.string()
@@ -33,16 +32,35 @@ export default function RegisterPage() {
   const handleSubmit = async (data: FormValues) => {
     try {
       setIsLoading(true);
-      // Your registration logic here
+      
+      // Send registration request to API
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: data.email,
+          password: data.password,
+        }),
+      });
+      
+      const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.message || 'Registration failed');
+      }
+      
       toast({
         title: "Success",
-        description: "Registration successful!",
+        description: "Registration successful! You can now sign in.",
       });
+      
       router.push("/auth/signin");
     } catch (error) {
       toast({
         title: "Error",
-        description: "Something went wrong. Please try again.",
+        description: error instanceof Error ? error.message : "Something went wrong. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -66,7 +84,6 @@ export default function RegisterPage() {
           <FormBase
             schema={formSchema}
             defaultValues={{
-              name: "",
               email: "",
               password: "",
               confirmPassword: "",
@@ -77,14 +94,6 @@ export default function RegisterPage() {
           >
             {(form) => (
               <FormSection>
-                <FormRow>
-                  <FormTextField
-                    name="name"
-                    label="Name"
-                    placeholder="John Doe"
-                    required
-                  />
-                </FormRow>
                 <FormRow>
                   <FormTextField
                     name="email"

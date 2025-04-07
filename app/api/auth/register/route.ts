@@ -9,12 +9,12 @@ const scryptAsync = promisify(scrypt);
 
 export async function POST(req: NextRequest) {
   try {
-    const { name, email, password, role = "viewer" } = await req.json();
+    const { email, password } = await req.json();
 
     // Validate input
-    if (!name || !email || !password) {
+    if (!email || !password) {
       return NextResponse.json(
-        { success: false, message: "Missing required fields" },
+        { success: false, message: "Email and password are required" },
         { status: 400 }
       );
     }
@@ -40,12 +40,12 @@ export async function POST(req: NextRequest) {
     // Store the salt and hashed password together
     const hashedPassword = `${salt}:${derivedKey.toString('hex')}`;
 
-    // Create new user
+    // Create new user with minimal information
     const user = await User.create({
-      name,
       email,
       password: hashedPassword,
-      role,
+      role: 'user',
+      status: 'active'
     });
 
     // Return user data (without password)
@@ -54,7 +54,6 @@ export async function POST(req: NextRequest) {
         success: true,
         user: {
           id: user._id,
-          name: user.name,
           email: user.email,
           role: user.role,
         },
