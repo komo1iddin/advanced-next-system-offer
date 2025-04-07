@@ -15,10 +15,12 @@ import { AddUniversityDirectModal } from "app/components/modals/AddUniversityDir
 
 // Import the React Query hook and table component
 import { useUniversityDirectsQuery } from "./hooks/useUniversityDirectsQuery";
-import { UniversityDirectsTable } from "@/app/components/tables/UniversityDirectsTable";
+import { TanStackUniversityDirectsTable } from "@/app/components/tables/TanStackUniversityDirectsTable";
+import { UniversityDirect } from "./hooks/useUniversityDirectsQuery";
 
 export default function UniversityDirectsPage() {
   const router = useRouter();
+  const [selectedRows, setSelectedRows] = useState<UniversityDirect[]>([]);
   
   // Use React Query hook
   const {
@@ -38,6 +40,23 @@ export default function UniversityDirectsPage() {
     router.push(`/admin/university-directs/edit/${id}`);
   };
 
+  // Handle bulk delete
+  const handleBulkDelete = async () => {
+    if (selectedRows.length === 0) return;
+    
+    const confirmed = window.confirm(`Are you sure you want to delete ${selectedRows.length} selected contact${selectedRows.length > 1 ? 's' : ''}?`);
+    
+    if (confirmed) {
+      // Process deletion for each selected row
+      for (const row of selectedRows) {
+        await deleteUniversityDirect(row._id);
+      }
+      
+      // Clear selection after deletion
+      setSelectedRows([]);
+    }
+  };
+
   return (
     <div className="container mx-auto py-8 px-4">
       {/* Improved header with better alignment and spacing */}
@@ -54,6 +73,30 @@ export default function UniversityDirectsPage() {
         </div>
         <AddUniversityDirectModal />
       </div>
+
+      {selectedRows.length > 0 && (
+        <div className="mb-4 p-4 bg-muted rounded-md flex items-center justify-between">
+          <p className="text-sm font-medium">
+            {selectedRows.length} contact{selectedRows.length !== 1 ? 's' : ''} selected
+          </p>
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setSelectedRows([])}
+            >
+              Clear Selection
+            </Button>
+            <Button 
+              variant="destructive" 
+              size="sm"
+              onClick={handleBulkDelete}
+            >
+              Delete Selected
+            </Button>
+          </div>
+        </div>
+      )}
 
       <Card>
         <CardHeader className="pb-3 flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
@@ -74,14 +117,16 @@ export default function UniversityDirectsPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <UniversityDirectsTable
-            universityDirects={universityDirects}
+          <TanStackUniversityDirectsTable
+            data={universityDirects}
             isLoading={isLoading}
             isError={isError}
-            error={error}
             onToggleActive={toggleUniversityDirectActive}
             onEdit={handleEdit}
             onDelete={deleteUniversityDirect}
+            onSelectionChange={setSelectedRows}
+            globalFilter={searchQuery}
+            onGlobalFilterChange={setSearchQuery}
             refetch={refetch}
           />
         </CardContent>
