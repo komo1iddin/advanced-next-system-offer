@@ -47,16 +47,43 @@ export function useTagsQuery(activeOnly = false, category?: string) {
   const updateTagMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<Omit<Tag, '_id' | 'createdAt' | 'updatedAt'>> }) => 
       updateTag(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: tagsKeys.lists() });
-      toast({ title: "Success", description: "Tag updated successfully" });
+    onMutate: async ({ id, data }) => {
+      // Cancel any outgoing refetches so they don't overwrite our optimistic update
+      await queryClient.cancelQueries({ queryKey: tagsKeys.lists() });
+      
+      // Snapshot the current value
+      const previousTags = queryClient.getQueryData<Tag[]>(tagsKeys.lists());
+      
+      // Perform optimistic update to the cache
+      if (previousTags) {
+        const updatedTags = previousTags.map(tag => 
+          tag._id === id ? { ...tag, ...data } : tag
+        );
+        
+        queryClient.setQueryData<Tag[]>(tagsKeys.lists(), updatedTags);
+      }
+      
+      // Return a context object with the snapshot
+      return { previousTags };
     },
-    onError: (error: Error) => {
+    onError: (err, { id, data }, context) => {
+      // If there was an error, revert back to the previous state
+      if (context?.previousTags) {
+        queryClient.setQueryData(tagsKeys.lists(), context.previousTags);
+      }
+      
       toast({
         title: "Error",
-        description: error.message || "Failed to update tag",
+        description: err instanceof Error ? err.message : "Failed to update tag",
         variant: "destructive",
       });
+    },
+    onSettled: () => {
+      // Always refetch to make sure our cache is in sync with the server
+      queryClient.invalidateQueries({ queryKey: tagsKeys.lists() });
+    },
+    onSuccess: () => {
+      toast({ title: "Success", description: "Tag updated successfully" });
     }
   });
   

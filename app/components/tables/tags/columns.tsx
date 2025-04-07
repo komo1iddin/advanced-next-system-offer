@@ -7,6 +7,7 @@ import { SortableHeader } from "../shared/SortableHeader";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { TagRow } from "@/app/admin/tags/lib/utils";
 import { Tag } from "@/app/admin/tags/lib/tag-service";
+import { useState } from "react";
 
 // Helper function to format date
 const formatDate = (dateString: Date) => {
@@ -74,25 +75,14 @@ export function getTagColumns({
     columnHelper.accessor("active", {
       header: ({ column }) => <SortableHeader column={column} title="Status" />,
       cell: (info) => {
-        const isActive = info.getValue();
-        return onToggleActive ? (
-          <div className="flex items-center">
-            <Switch
-              checked={isActive}
-              onCheckedChange={() => 
-                onToggleActive(info.row.original.id, !isActive)
-              }
-            />
-            <span className="ml-2">{isActive ? "Active" : "Inactive"}</span>
-          </div>
-        ) : (
-          <span
-            className={`inline-block px-2 py-1 rounded-full text-xs ${
-              isActive ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
-            }`}
-          >
-            {isActive ? "Active" : "Inactive"}
-          </span>
+        const initialActive = info.getValue();
+        // We need to use a component here to maintain local state
+        return (
+          <StatusSwitchCell 
+            initialActive={initialActive} 
+            id={info.row.original.id} 
+            onToggle={onToggleActive} 
+          />
         );
       },
     }),
@@ -163,4 +153,45 @@ export function getTagColumns({
       enableSorting: false,
     }),
   ];
+}
+
+// Status switch component with local state
+function StatusSwitchCell({
+  initialActive,
+  id,
+  onToggle
+}: {
+  initialActive: boolean;
+  id: string;
+  onToggle?: (id: string, active: boolean) => void;
+}) {
+  const [isActive, setIsActive] = useState(initialActive);
+  
+  if (!onToggle) {
+    return (
+      <span
+        className={`inline-block px-2 py-1 rounded-full text-xs ${
+          isActive ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+        }`}
+      >
+        {isActive ? "Active" : "Inactive"}
+      </span>
+    );
+  }
+  
+  return (
+    <div className="flex items-center">
+      <Switch
+        checked={isActive}
+        onCheckedChange={(checked) => {
+          // Immediately update local state for fast UI feedback
+          setIsActive(checked);
+          
+          // Then call the handler to persist the change
+          onToggle(id, checked);
+        }}
+      />
+      <span className="ml-2">{isActive ? "Active" : "Inactive"}</span>
+    </div>
+  );
 } 

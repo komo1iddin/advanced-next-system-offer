@@ -123,6 +123,20 @@ export default function TagsPage() {
 
   // Handle toggle active status
   const handleToggleActive = (id: string, active: boolean) => {
+    // Optimistically update the filtered tags state to show immediate feedback
+    const tagToUpdate = filteredTags.find(tag => tag.id === id);
+    if (tagToUpdate) {
+      // Create a temporary clone of the filtered array with the updated status
+      const updatedFilteredTags = filteredTags.map(tag => 
+        tag.id === id ? { ...tag, active } : tag
+      );
+      
+      // Update local state for immediate UI response
+      // This isn't directly possible since filteredTags is derived from tagRows
+      // Instead we'll rely on the updateTag function to handle optimistic updates
+    }
+    
+    // Perform the actual update
     updateTag(id, { active });
   };
 
