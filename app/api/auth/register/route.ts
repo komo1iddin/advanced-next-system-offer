@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import bcrypt from "bcrypt";
+import { scrypt, randomBytes } from "crypto";
+import { promisify } from "util";
 import connectToDatabase from "@/lib/mongodb";
 import User from "@/lib/models/User";
+
+// Promisify the scrypt function
+const scryptAsync = promisify(scrypt);
 
 export async function POST(req: NextRequest) {
   try {
@@ -27,9 +31,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Hash password
-    const saltRounds = 10;
-    const hashedPassword = await bcrypt.hash(password, saltRounds);
+    // Generate a random salt
+    const salt = randomBytes(16).toString('hex');
+    
+    // Hash the password with the salt
+    const derivedKey = await scryptAsync(password, salt, 64) as Buffer;
+    
+    // Store the salt and hashed password together
+    const hashedPassword = `${salt}:${derivedKey.toString('hex')}`;
 
     // Create new user
     const user = await User.create({

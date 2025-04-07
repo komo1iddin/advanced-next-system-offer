@@ -1,6 +1,5 @@
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { compare } from "bcrypt";
 import connectToDatabase from "@/lib/mongodb";
 import { JWT } from "next-auth/jwt";
 import { Session } from "next-auth";
@@ -53,7 +52,7 @@ const handler = NextAuth({
         const user = await User.findOne({ email: credentials.email });
 
         // If user doesn't exist or password doesn't match
-        if (!user || !(await compare(credentials.password, user.password))) {
+        if (!user || !(await user.comparePassword(credentials.password))) {
           throw new Error("Invalid email or password");
         }
 

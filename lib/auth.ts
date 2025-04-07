@@ -1,15 +1,39 @@
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { compare } from "bcrypt";
+import { scrypt, timingSafeEqual } from "crypto";
+import { promisify } from "util";
+
+// Promisify the scrypt function
+const scryptAsync = promisify(scrypt);
+
+// Helper function to compare passwords
+async function comparePasswords(candidatePassword: string, storedPassword: string): Promise<boolean> {
+  try {
+    // Split the stored password into salt and hash
+    const [salt, storedHash] = storedPassword.split(':');
+    
+    // Hash the candidate password with the same salt
+    const derivedKey = await scryptAsync(candidatePassword, salt, 64) as Buffer;
+    
+    // Compare the hashed candidate password with the stored hash
+    const storedHashBuffer = Buffer.from(storedHash, 'hex');
+    
+    // Use timingSafeEqual to prevent timing attacks
+    return timingSafeEqual(derivedKey, storedHashBuffer);
+  } catch (error) {
+    return false;
+  }
+}
 
 // Simple in-memory user store (replace with your preferred database solution)
 const users = [
   {
     id: "1",
     email: "komo1iddin.pro@gmail.com",
-    password: "bilmadim", // password: "password123"
+    // This should be a hash in the format "salt:hash" - this is just an example
+    password: "salt:hash", // Update this with a properly hashed password
     name: "Admin User",
-    role: "admin" // Added role field
+    role: "admin"
   },
 ];
 
@@ -42,7 +66,7 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
 
-        const isPasswordValid = await compare(credentials.password, user.password);
+        const isPasswordValid = await comparePasswords(credentials.password, user.password);
         
         if (!isPasswordValid) {
           return null;
@@ -52,7 +76,7 @@ export const authOptions: NextAuthOptions = {
           id: user.id,
           email: user.email,
           name: user.name,
-          role: user.role // Include role in the returned user object
+          role: user.role
         };
       },
     }),

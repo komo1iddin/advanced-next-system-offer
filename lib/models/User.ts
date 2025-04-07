@@ -1,5 +1,9 @@
 import mongoose, { Schema, Document } from 'mongoose';
-import bcrypt from 'bcrypt';
+import { scrypt, randomBytes, timingSafeEqual } from 'crypto';
+import { promisify } from 'util';
+
+// Promisify the scrypt function
+const scryptAsync = promisify(scrypt);
 
 export interface IUser extends Document {
   email: string;
@@ -105,8 +109,15 @@ UserSchema.pre('save', async function(this: IUser, next) {
   if (!this.isModified('password')) return next();
 
   try {
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
+    // Generate a random salt
+    const salt = randomBytes(16).toString('hex');
+    
+    // Hash the password with the salt
+    const derivedKey = await scryptAsync(this.password, salt, 64) as Buffer;
+    
+    // Store the salt and hashed password together
+    this.password = `${salt}:${derivedKey.toString('hex')}`;
+    
     next();
   } catch (error) {
     next(error as Error);
@@ -116,7 +127,17 @@ UserSchema.pre('save', async function(this: IUser, next) {
 // Method to compare password
 UserSchema.methods.comparePassword = async function(candidatePassword: string): Promise<boolean> {
   try {
-    return await bcrypt.compare(candidatePassword, this.password);
+    // Split the stored password into salt and hash
+    const [salt, storedHash] = this.password.split(':');
+    
+    // Hash the candidate password with the same salt
+    const derivedKey = await scryptAsync(candidatePassword, salt, 64) as Buffer;
+    
+    // Compare the hashed candidate password with the stored hash
+    const storedHashBuffer = Buffer.from(storedHash, 'hex');
+    
+    // Use timingSafeEqual to prevent timing attacks
+    return timingSafeEqual(derivedKey, storedHashBuffer);
   } catch (error) {
     throw error;
   }
