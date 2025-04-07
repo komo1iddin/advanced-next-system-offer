@@ -87,16 +87,46 @@ export function useLocationsQuery() {
   const updateProvinceMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: { name: string; active: boolean } }) => 
       updateProvince(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: locationKeys.all });
-      toast({ title: "Success", description: "Province updated successfully" });
+    onMutate: async ({ id, data }) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: locationKeys.all });
+      
+      // Snapshot the previous value
+      const previousProvinces = queryClient.getQueryData<Province[]>(locationKeys.provinces());
+      const previousCities = queryClient.getQueryData<City[]>(locationKeys.cities());
+      
+      // Optimistically update provinces
+      if (previousProvinces) {
+        const updatedProvinces = previousProvinces.map(province => 
+          province._id === id ? { ...province, ...data } : province
+        );
+        
+        queryClient.setQueryData<Province[]>(locationKeys.provinces(), updatedProvinces);
+      }
+      
+      return { previousProvinces, previousCities };
     },
-    onError: (error: Error) => {
+    onError: (err, { id, data }, context) => {
+      // If there was an error, revert back to the previous values
+      if (context?.previousProvinces) {
+        queryClient.setQueryData(locationKeys.provinces(), context.previousProvinces);
+      }
+      if (context?.previousCities) {
+        queryClient.setQueryData(locationKeys.cities(), context.previousCities);
+      }
+      
       toast({
         title: "Error",
-        description: error.message || "Failed to update province",
+        description: err instanceof Error ? err.message : "Failed to update province",
         variant: "destructive",
       });
+    },
+    onSettled: () => {
+      // Always refetch to make sure our local data is in sync with the server
+      queryClient.invalidateQueries({ queryKey: locationKeys.all });
+    },
+    onSuccess: () => {
+      toast({ title: "Success", description: "Province updated successfully" });
     }
   });
   
@@ -134,16 +164,54 @@ export function useLocationsQuery() {
   const updateCityMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: { name: string; provinceId: string; active: boolean } }) => 
       updateCity(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: locationKeys.cities() });
-      toast({ title: "Success", description: "City updated successfully" });
+    onMutate: async ({ id, data }) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: locationKeys.cities() });
+      
+      // Snapshot the previous value
+      const previousCities = queryClient.getQueryData<City[]>(locationKeys.cities());
+      
+      // Optimistically update
+      if (previousCities) {
+        const updatedCities = previousCities.map(city => {
+          if (city._id === id) {
+            // Make sure we preserve the correct type structure for provinceId
+            return {
+              ...city,
+              name: data.name,
+              active: data.active,
+              // Keep the existing provinceId structure
+              provinceId: typeof city.provinceId === 'string' 
+                ? { _id: data.provinceId, name: '' } // We don't have the name, but will be refreshed
+                : { ...city.provinceId, _id: data.provinceId }
+            };
+          }
+          return city;
+        });
+        
+        queryClient.setQueryData<City[]>(locationKeys.cities(), updatedCities);
+      }
+      
+      return { previousCities };
     },
-    onError: (error: Error) => {
+    onError: (err, { id, data }, context) => {
+      // If there was an error, revert back to the previous value
+      if (context?.previousCities) {
+        queryClient.setQueryData(locationKeys.cities(), context.previousCities);
+      }
+      
       toast({
         title: "Error",
-        description: error.message || "Failed to update city",
+        description: err instanceof Error ? err.message : "Failed to update city",
         variant: "destructive",
       });
+    },
+    onSettled: () => {
+      // Always refetch to make sure our local data is in sync with the server
+      queryClient.invalidateQueries({ queryKey: locationKeys.cities() });
+    },
+    onSuccess: () => {
+      toast({ title: "Success", description: "City updated successfully" });
     }
   });
   

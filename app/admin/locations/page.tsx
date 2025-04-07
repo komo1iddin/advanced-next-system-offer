@@ -12,7 +12,8 @@ import { AdminPageLayout } from "@/components/ui/admin-page-layout";
 // Import custom hook and components
 import { useLocationsQuery } from "./hooks/useLocationsQuery";
 import LocationDialogs from "./components/LocationDialogs";
-import { LocationsTable } from "@/app/components/tables/LocationsTable";
+import { TanStackLocationsTable } from "@/app/components/tables/TanStackLocationsTable";
+import { LocationRow } from "./lib/utils";
 
 // Add CSS to prevent floating buttons
 import '@/app/globals.css';
@@ -41,7 +42,7 @@ export default function LocationsPage() {
     deleteCity
   } = useLocationsQuery();
 
-  // State for dialogs
+  // State for dialogs and selection
   const [isAddProvinceDialogOpen, setIsAddProvinceDialogOpen] = useState(false);
   const [isEditProvinceDialogOpen, setIsEditProvinceDialogOpen] = useState(false);
   const [isAddCityDialogOpen, setIsAddCityDialogOpen] = useState(false);
@@ -49,6 +50,7 @@ export default function LocationsPage() {
   const [selectedProvince, setSelectedProvince] = useState<any>(null);
   const [selectedCity, setSelectedCity] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedRows, setSelectedRows] = useState<LocationRow[]>([]);
 
   // Handle edit operations
   const handleEditProvince = useCallback((province: any) => {
@@ -99,6 +101,122 @@ export default function LocationsPage() {
     await addCity(data);
     setIsAddCityDialogOpen(false);
   }, [addCity]);
+
+  // Handle toggle active status
+  const handleToggleActive = useCallback((id: string, type: 'province' | 'city', active: boolean) => {
+    if (type === 'province') {
+      updateProvince(id, { name: provinces.find(p => p._id === id)?.name || '', active });
+    } else {
+      const city = cities.find(c => c._id === id);
+      if (city) {
+        updateCity(id, { 
+          name: city.name, 
+          provinceId: typeof city.provinceId === 'string' ? city.provinceId : city.provinceId._id, 
+          active 
+        });
+      }
+    }
+  }, [provinces, cities, updateProvince, updateCity]);
+
+  // Handle bulk deletion
+  const handleBulkDelete = async () => {
+    if (selectedRows.length === 0) return;
+    
+    const provinces = selectedRows.filter(row => row.type === 'province');
+    const cities = selectedRows.filter(row => row.type === 'city');
+    
+    if (provinces.length > 0 || cities.length > 0) {
+      let message = "Are you sure you want to delete ";
+      
+      if (provinces.length > 0) {
+        message += `${provinces.length} ${provinces.length === 1 ? 'province' : 'provinces'}`;
+        if (cities.length > 0) message += " and ";
+      }
+      
+      if (cities.length > 0) {
+        message += `${cities.length} ${cities.length === 1 ? 'city' : 'cities'}`;
+      }
+      
+      message += "? ";
+      
+      if (provinces.length > 0) {
+        message += "Deleting provinces will also delete all their cities.";
+      }
+      
+      const confirmed = window.confirm(message);
+      
+      if (confirmed) {
+        // Delete provinces first (which will cascade delete their cities)
+        for (const province of provinces) {
+          await deleteProvince(province.id);
+        }
+        
+        // Then delete individually selected cities
+        // This ensures we don't try to delete cities that were already deleted due to province deletion
+        const cityIdsToDelete = cities
+          .filter(city => !provinces.some(p => p.id === city.provinceId))
+          .map(city => city.id);
+          
+        for (const cityId of cityIdsToDelete) {
+          await deleteCity(cityId);
+        }
+        
+        // Clear selection after deletion
+        setSelectedRows([]);
+      }
+    }
+  };
+
+  // Handle bulk status change
+  const handleBulkStatusChange = async (active: boolean) => {
+    if (selectedRows.length === 0) return;
+    
+    const provinces = selectedRows.filter(row => row.type === 'province');
+    const cities = selectedRows.filter(row => row.type === 'city');
+    
+    const statusText = active ? 'activate' : 'deactivate';
+    
+    if (provinces.length > 0 || cities.length > 0) {
+      let message = `Are you sure you want to ${statusText} `;
+      
+      if (provinces.length > 0) {
+        message += `${provinces.length} ${provinces.length === 1 ? 'province' : 'provinces'}`;
+        if (cities.length > 0) message += " and ";
+      }
+      
+      if (cities.length > 0) {
+        message += `${cities.length} ${cities.length === 1 ? 'city' : 'cities'}`;
+      }
+      
+      message += "?";
+      
+      const confirmed = window.confirm(message);
+      
+      if (confirmed) {
+        // Update provinces
+        for (const province of provinces) {
+          await updateProvince(province.id, { 
+            name: province.name, 
+            active 
+          });
+        }
+        
+        // Update cities
+        for (const city of cities) {
+          if (city.provinceId) {
+            await updateCity(city.id, { 
+              name: city.name, 
+              provinceId: city.provinceId, 
+              active 
+            });
+          }
+        }
+        
+        // Clear selection after update
+        setSelectedRows([]);
+      }
+    }
+  };
 
   // Filter locations based on search term
   const filteredLocations = locations.filter(location => {
@@ -166,21 +284,69 @@ export default function LocationsPage() {
         title="Locations"
         description="Manage provinces/states and cities in your application"
         actionButton={actionButtons}
-        cardTitle="All Locations"
         searchTerm={searchTerm}
         onSearchChange={setSearchTerm}
         itemCount={filteredLocations.length}
         itemName="location"
       >
-        <LocationsTable
-          locations={filteredLocations}
+        {selectedRows.length > 0 && (
+          <div className="mb-4 p-4 bg-muted rounded-md flex items-center justify-between">
+            <p className="text-sm font-medium">
+              {selectedRows.length} {selectedRows.length === 1 ? 'location' : 'locations'} selected
+              {selectedRows.filter(r => r.type === 'province').length > 0 && (
+                <span className="ml-1">
+                  ({selectedRows.filter(r => r.type === 'province').length} provinces,{' '}
+                  {selectedRows.filter(r => r.type === 'city').length} cities)
+                </span>
+              )}
+            </p>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => handleBulkStatusChange(true)}
+              >
+                Activate
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => handleBulkStatusChange(false)}
+              >
+                Deactivate
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setSelectedRows([])}
+              >
+                Clear Selection
+              </Button>
+              <Button 
+                variant="destructive" 
+                size="sm"
+                onClick={handleBulkDelete}
+              >
+                Delete Selected
+              </Button>
+            </div>
+          </div>
+        )}
+
+        <TanStackLocationsTable
+          data={filteredLocations}
           isLoading={isLoading}
-          loadError={isError ? String(error) : null}
-          retryLoad={refetch}
+          isError={isError}
+          error={error}
           onEditProvince={handleEditProvince}
           onEditCity={handleEditCity}
           onDeleteProvince={handleDeleteProvince}
           onDeleteCity={handleDeleteCity}
+          onToggleActive={handleToggleActive}
+          onSelectionChange={setSelectedRows}
+          globalFilter={searchTerm}
+          onGlobalFilterChange={setSearchTerm}
+          refetch={refetch}
           provinces={provinces}
           cities={cities}
         />
