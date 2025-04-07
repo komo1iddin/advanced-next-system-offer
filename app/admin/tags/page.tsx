@@ -5,16 +5,6 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
 import { Toaster } from "@/components/ui/toaster";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 
 // Import admin page layout
 import { AdminPageLayout } from "@/components/ui/admin-page-layout";
@@ -22,8 +12,8 @@ import { AdminPageLayout } from "@/components/ui/admin-page-layout";
 // Import custom hook and components
 import { useTagsQuery } from "./hooks/useTagsQuery";
 import TagDialogs from "./components/TagDialogs";
-import { TagsTable } from "@/app/components/tables/TagsTable";
-import { z } from "zod";
+import { TanStackTagsTable } from "@/app/components/tables/TanStackTagsTable";
+import { TagRow } from "./lib/utils";
 
 export default function TagsPage() {
   const router = useRouter();
@@ -43,12 +33,12 @@ export default function TagsPage() {
     deleteTag
   } = useTagsQuery();
 
-  // State for dialogs
+  // State for dialogs and selection
   const [isAddTagDialogOpen, setIsAddTagDialogOpen] = useState(false);
   const [isEditTagDialogOpen, setIsEditTagDialogOpen] = useState(false);
   const [selectedTag, setSelectedTag] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [tagToDelete, setTagToDelete] = useState<string | null>(null);
+  const [selectedRows, setSelectedRows] = useState<TagRow[]>([]);
 
   // Handle tag edit
   const handleEditTag = useCallback((tag: any) => {
@@ -58,7 +48,6 @@ export default function TagsPage() {
 
   // Handle tag delete
   const handleDeleteTag = useCallback((id: string) => {
-    setTagToDelete(null);
     deleteTag(id);
   }, [deleteTag]);
 
@@ -97,6 +86,46 @@ export default function TagsPage() {
     setIsAddTagDialogOpen(false);
   }, [addTag, tags]);
 
+  // Handle bulk delete
+  const handleBulkDelete = async () => {
+    if (selectedRows.length === 0) return;
+    
+    const confirmed = window.confirm(`Are you sure you want to delete ${selectedRows.length} selected ${selectedRows.length > 1 ? 'tags' : 'tag'}?`);
+    
+    if (confirmed) {
+      // Process deletion for each selected row
+      for (const row of selectedRows) {
+        await deleteTag(row.id);
+      }
+      
+      // Clear selection after deletion
+      setSelectedRows([]);
+    }
+  };
+
+  // Handle bulk status change
+  const handleBulkStatusChange = async (active: boolean) => {
+    if (selectedRows.length === 0) return;
+    
+    const statusText = active ? 'activate' : 'deactivate';
+    const confirmed = window.confirm(`Are you sure you want to ${statusText} ${selectedRows.length} selected ${selectedRows.length > 1 ? 'tags' : 'tag'}?`);
+    
+    if (confirmed) {
+      // Process status change for each selected row
+      for (const row of selectedRows) {
+        await updateTag(row.id, { active });
+      }
+      
+      // Clear selection after update
+      setSelectedRows([]);
+    }
+  };
+
+  // Handle toggle active status
+  const handleToggleActive = (id: string, active: boolean) => {
+    updateTag(id, { active });
+  };
+
   // Filter tags based on search term
   const filteredTags = tagRows.filter(tag => {
     return searchTerm === "" || 
@@ -133,19 +162,60 @@ export default function TagsPage() {
         title="Tags"
         description="Create and manage tags for categorizing study offers"
         actionButton={addButton}
-        cardTitle="All Tags"
         searchTerm={searchTerm}
         onSearchChange={setSearchTerm}
         itemCount={filteredTags.length}
         itemName="tag"
       >
-        <TagsTable
-          tags={filteredTags}
+        {selectedRows.length > 0 && (
+          <div className="mb-4 p-4 bg-muted rounded-md flex items-center justify-between">
+            <p className="text-sm font-medium">
+              {selectedRows.length} {selectedRows.length === 1 ? 'tag' : 'tags'} selected
+            </p>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => handleBulkStatusChange(true)}
+              >
+                Activate
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => handleBulkStatusChange(false)}
+              >
+                Deactivate
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setSelectedRows([])}
+              >
+                Clear Selection
+              </Button>
+              <Button 
+                variant="destructive" 
+                size="sm"
+                onClick={handleBulkDelete}
+              >
+                Delete Selected
+              </Button>
+            </div>
+          </div>
+        )}
+
+        <TanStackTagsTable
+          data={filteredTags}
           isLoading={isLoading}
           isError={isError}
           error={error}
+          onToggleActive={handleToggleActive}
           onEdit={handleEditTag}
-          onDelete={setTagToDelete}
+          onDelete={handleDeleteTag}
+          onSelectionChange={setSelectedRows}
+          globalFilter={searchTerm}
+          onGlobalFilterChange={setSearchTerm}
           refetch={refetch}
         />
       </AdminPageLayout>
@@ -157,27 +227,6 @@ export default function TagsPage() {
         onAddTag={handleAddTag}
         onUpdateTag={handleUpdateTag}
       />
-      
-      {/* Confirmation dialog for tag deletion */}
-      <AlertDialog open={!!tagToDelete} onOpenChange={(open) => !open && setTagToDelete(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Tag</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete this tag? This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
-              className="bg-destructive hover:bg-destructive/90"
-              onClick={() => tagToDelete && handleDeleteTag(tagToDelete)}
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
       
       <Toaster />
     </>
