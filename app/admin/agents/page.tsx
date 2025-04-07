@@ -10,8 +10,8 @@ import { PlusCircle } from "lucide-react";
 import { AdminPageLayout } from "@/components/ui/admin-page-layout";
 
 // Import the new React Query hook
-import { useAgentsQuery } from "./hooks/useAgentsQuery";
-import { AgentsTable } from "@/app/components/tables/AgentsTable";
+import { useAgentsQuery, Agent } from "./hooks/useAgentsQuery";
+import { TanStackAgentsTable } from "@/app/components/tables/TanStackAgentsTable";
 
 // Import our new AgentModal component
 import { AgentModal } from "./components/AgentModal";
@@ -19,6 +19,7 @@ import { AgentModal } from "./components/AgentModal";
 export default function AgentsPage() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [selectedRows, setSelectedRows] = useState<Agent[]>([]);
   
   // State for add dialog
   const [isAddAgentDialogOpen, setIsAddAgentDialogOpen] = useState(false);
@@ -47,6 +48,23 @@ export default function AgentsPage() {
     router.push(`/admin/agents/edit/${id}`);
   };
 
+  // Handle bulk delete
+  const handleBulkDelete = async () => {
+    if (selectedRows.length === 0) return;
+    
+    const confirmed = window.confirm(`Are you sure you want to delete ${selectedRows.length} selected ${selectedRows.length > 1 ? 'agents' : 'agent'}?`);
+    
+    if (confirmed) {
+      // Process deletion for each selected row
+      for (const row of selectedRows) {
+        await deleteAgent(row._id);
+      }
+      
+      // Clear selection after deletion
+      setSelectedRows([]);
+    }
+  };
+
   // Dialog controls for add agent modal
   const addDialogControl = {
     isOpen: isAddAgentDialogOpen,
@@ -68,20 +86,46 @@ export default function AgentsPage() {
         title="Manage Agents"
         description="View and manage your education agents and their contact information."
         actionButton={actionButton}
-        cardTitle="Agents"
         searchTerm={searchQuery}
         onSearchChange={setSearchQuery}
         itemCount={filteredAgents.length}
         itemName="agent"
       >
-        <AgentsTable
-          agents={filteredAgents}
+        {selectedRows.length > 0 && (
+          <div className="mb-4 p-4 bg-muted rounded-md flex items-center justify-between">
+            <p className="text-sm font-medium">
+              {selectedRows.length} {selectedRows.length === 1 ? 'agent' : 'agents'} selected
+            </p>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setSelectedRows([])}
+              >
+                Clear Selection
+              </Button>
+              <Button 
+                variant="destructive" 
+                size="sm"
+                onClick={handleBulkDelete}
+              >
+                Delete Selected
+              </Button>
+            </div>
+          </div>
+        )}
+
+        <TanStackAgentsTable
+          data={filteredAgents}
           isLoading={isLoading}
           isError={isError}
           error={error}
           onToggleActive={toggleAgentActive}
           onEdit={handleEdit}
           onDelete={deleteAgent}
+          onSelectionChange={setSelectedRows}
+          globalFilter={searchQuery}
+          onGlobalFilterChange={setSearchQuery}
           refetch={refetch}
         />
       </AdminPageLayout>
