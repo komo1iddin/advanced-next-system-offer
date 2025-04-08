@@ -27,7 +27,7 @@ import {
 import { flexRender } from "@tanstack/react-table";
 
 // Import shared components
-import { usePersistentTableState } from "@/app/hooks/usePersistentTableState";
+import { usePersistentTableState } from "@/hooks/use-persistent-table-state";
 import { TablePagination } from "./shared/TablePagination";
 import { TableLoadingState, TableErrorState, TableEmptyState } from "./shared/TableStates";
 import { getUniversityDirectColumns } from "./university-directs/columns";

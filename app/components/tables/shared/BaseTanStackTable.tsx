@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/table";
 
 // Import shared components
-import { usePersistentTableState } from "@/app/hooks/usePersistentTableState";
+import { usePersistentTableState } from "@/hooks/use-persistent-table-state";
 import { TablePagination } from "./TablePagination";
 import { TableLoadingState, TableErrorState, TableEmptyState } from "./TableStates";
 

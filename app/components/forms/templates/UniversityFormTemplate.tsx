@@ -9,7 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
-import { useCities } from "@/app/hooks/useCities";
+import { useCities } from "@/hooks/use-cities";
 import { universitySchema } from "@/app/components/forms/validation";
 import { FormTemplateChildProps, FormTemplateProps, FormValuesFromSchema } from "./types";
 
