@@ -25,14 +25,14 @@ import {
 } from "@/components/ui/dialog";
 
 // Import hooks
-import { useStudyOfferForm } from "@/app/admin/hooks/useStudyOfferForm";
-import { useConfirm } from "@/app/admin/hooks/useConfirm";
-import { 
-  useDeleteOffer,
+import { useStudyOfferForm } from "@/hooks/use-study-offer-form";
+import { useConfirm } from "@/hooks/use-confirm";
+import {
   useGetOffers,
+  useDeleteOffer,
+  useToggleOfferActive,
   useCreateUpdateOffer,
-  useToggleOfferActive
-} from "@/app/admin/hooks/useOffersQuery";
+} from "@/hooks/use-offers-query";
 
 export default function AdminOffersPage() {
   const router = useRouter();
