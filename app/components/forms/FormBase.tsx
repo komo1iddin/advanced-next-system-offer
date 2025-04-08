@@ -4,7 +4,7 @@ import React, { ReactNode } from "react";
 import { useForm, UseFormReturn, FieldValues, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { cn } from "@/app/lib/utils";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
 export interface FormBaseProps<TFieldValues extends FieldValues> {
