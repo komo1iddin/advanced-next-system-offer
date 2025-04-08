@@ -23,7 +23,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Separator } from "@/components/ui/separator"
 import { BasicInfoSection } from "@/app/add-offer/components/BasicInfoSection"
-import { TagInput } from "@/app/add-offer/components/TagInput"
+import { TagInput } from "@/components/ui/tag-input"
 
 // Color options for cards - solid colors instead of gradients
 const cardColors = [

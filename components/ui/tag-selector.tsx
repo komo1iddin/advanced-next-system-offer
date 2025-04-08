@@ -204,19 +204,17 @@ export function TagSelector({
         </PopoverContent>
       </Popover>
       
-      {/* Selected tags badges */}
       {multiple && selectedTags.length > 0 && (
-        <div className="flex flex-wrap gap-1 mt-2">
+        <div className="mt-3 flex flex-wrap gap-2">
           {selectedTags.map((tagId) => {
-            const matchingTag = tags.find(tag => tag.id === tagId || tag.name === tagId);
-            const tagName = matchingTag?.name || tagId;
+            const tagName = selectedTagNames[selectedTags.indexOf(tagId)];
             return (
-              <Badge key={tagId} variant="secondary" className="px-2 py-1">
+              <Badge key={tagId} variant="secondary" className="flex items-center gap-1">
                 {tagName}
                 <button
                   type="button"
                   onClick={() => removeTag(tagId)}
-                  className="ml-1 rounded-full outline-none focus:ring-2 focus:ring-offset-2"
+                  className="ml-1 rounded-full hover:bg-muted w-4 h-4 inline-flex items-center justify-center"
                 >
                   <X className="h-3 w-3" />
                 </button>

@@ -5,7 +5,6 @@ import Link from "next/link";
 import {
   Building2,
   FileText,
-  Globe,
   Home,
   LayoutDashboard,
   MapPin,
@@ -26,7 +25,7 @@ interface SidebarLink {
   icon: React.ReactNode;
 }
 
-export default function AdminSidebar() {
+export function AdminSidebar() {
   const pathname = usePathname();
   const [expanded, setExpanded] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);

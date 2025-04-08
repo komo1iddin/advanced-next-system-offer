@@ -2,13 +2,13 @@ import { useEffect, useState } from "react";
 import { FormBase } from "@/app/components/forms/FormBase";
 import { FormRow } from "@/app/components/forms/FormRow";
 import { FormSection } from "@/app/components/forms/FormSection";
-import { Input } from "@/app/components/ui/input";
-import { Select } from "@/app/components/ui/select";
-import { Textarea } from "@/app/components/ui/textarea";
-import { Switch } from "@/app/components/ui/switch";
-import { Button } from "@/app/components/ui/button";
-import { Label } from "@/app/components/ui/label";
-import { Spinner } from "@/app/components/ui/spinner";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Spinner } from "@/components/ui/spinner";
 import { useCities } from "@/app/hooks/useCities";
 import { universitySchema } from "@/app/components/forms/validation";
 import { FormTemplateChildProps, FormTemplateProps, FormValuesFromSchema } from "./types";
@@ -145,20 +145,6 @@ function UniversityFormContent({
           </div>
         </FormRow>
       </FormSection>
-
-      {/* Only show submit button if we're used as a standalone form */}
-      {onSubmit && (
-        <div className="mt-6 flex justify-end space-x-4">
-          <Button
-            type="submit"
-            disabled={isSubmitting}
-            onClick={form.handleSubmit(onSubmit)}
-          >
-            {isSubmitting && <Spinner size="sm" className="mr-2" />}
-            {mode === "create" ? "Create University" : "Update University"}
-          </Button>
-        </div>
-      )}
     </div>
   );
 } 

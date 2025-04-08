@@ -1,5 +1,4 @@
 export * from "./FormSection";
-export * from "./TagInput";
 export * from "./RequirementInput";
 export * from "./BasicInfoSection";
 export * from "./TuitionSection";

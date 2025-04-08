@@ -19,7 +19,7 @@ A comprehensive component that wraps common admin page patterns including header
 **Usage:**
 
 ```tsx
-import { AdminPageLayout } from "@/components/ui/admin-page-layout";
+import { AdminPageLayout } from "@/components/ui/admin/page-layout";
 
 export default function MyEntityPage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -59,7 +59,7 @@ export default function MyEntityPage() {
 
 ### AdminPageHeader
 
-Used for consistent page headers with a title and optional action button.
+Used for consistent page headers with a title and optional action button. Part of the admin/page-layout.tsx component.
 
 **Props:**
 - `title`: Main page title
@@ -68,7 +68,7 @@ Used for consistent page headers with a title and optional action button.
 
 ### AdminCard
 
-Used for content cards with consistent styling.
+Used for content cards with consistent styling. Part of the admin/page-layout.tsx component.
 
 **Props:**
 - `title`: Card title
@@ -97,4 +97,4 @@ For examples, see:
 - `app/admin/universities/page.tsx`
 - `app/admin/tags/page.tsx`
 
-These pages demonstrate the proper usage of the AdminPageLayout component alongside the entity-specific table components. 
+These pages demonstrate the proper usage of the AdminPageLayout component alongside the entity-specific table components.

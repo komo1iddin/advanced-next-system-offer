@@ -3,7 +3,7 @@
 import { useSession } from "next-auth/react";
 import { redirect } from "next/navigation";
 import React from "react";
-import AdminSidebar from "@/app/components/AdminSidebar";
+import { AdminSidebar } from "@/components/ui/admin/sidebar";
 
 export default function AdminClientLayout({
   children,

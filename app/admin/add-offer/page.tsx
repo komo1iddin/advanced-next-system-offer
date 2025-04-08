@@ -10,7 +10,7 @@ import { Toaster } from "@/components/ui/toaster";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { redirect } from "next/navigation";
-import { TagInputSelector } from "../../components/TagInputSelector";
+import { TagInputSelector } from "@/components/ui/tag-input-selector";
 
 // Import form components from the original add-offer page
 import {

@@ -1,11 +1,11 @@
 import { FormBase } from "@/app/components/forms/FormBase";
 import { FormRow } from "@/app/components/forms/FormRow";
 import { FormSection } from "@/app/components/forms/FormSection";
-import { Input } from "@/app/components/ui/input";
-import { Switch } from "@/app/components/ui/switch";
-import { Button } from "@/app/components/ui/button";
-import { Label } from "@/app/components/ui/label";
-import { Spinner } from "@/app/components/ui/spinner";
+import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Spinner } from "@/components/ui/spinner";
 import { tagSchema } from "@/app/components/forms/validation";
 import { FormTemplateChildProps, FormTemplateProps, FormValuesFromSchema } from "./types";
 

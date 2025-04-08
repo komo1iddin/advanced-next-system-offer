@@ -19,8 +19,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Spinner } from "./ui/spinner";
-import { fetchTags, addTag } from "../admin/tags/lib/tag-service";
+import { Spinner } from "@/components/ui/spinner";
+import { fetchTags, addTag } from "@/app/admin/tags/lib/tag-service";
 
 // Define the TagOption interface locally
 export interface TagOption {
@@ -248,108 +248,115 @@ export function TagInputSelector({
               );
             })}
             
-            <div className="grow flex-1">
-              <Input
-                ref={inputRef}
-                type="text"
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder={items.length === 0 ? placeholder : ""}
-                className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0 p-0 pl-1 h-8"
-                disabled={maxTags ? items.length >= maxTags : false}
-              />
-            </div>
-          </div>
-          
-          {/* Dropdown for tags */}
-          {inputValue.trim().length > 0 && (
-            <div className="absolute w-full z-50 bg-background border rounded-md mt-1 shadow-md">
-              {tagsLoading ? (
-                <div className="flex justify-center items-center py-4">
-                  <Spinner className="h-5 w-5 mr-2" />
-                  <span>Loading tags...</span>
-                </div>
-              ) : (
-                <Command className="rounded-lg border shadow-md w-full">
-                  <CommandList className="max-h-[200px] overflow-auto">
-                    {Object.keys(tagsByCategory).length > 0 ? (
-                      <>
-                        {Object.entries(tagsByCategory).map(([category, tags]) => (
+            {/* Input for new tags */}
+            <Popover open={open === true} onOpenChange={setOpen}>
+              <div className="flex-1 min-w-[120px] inline-flex">
+                <PopoverTrigger asChild>
+                  <div className="flex items-center gap-1 w-full">
+                    <Input
+                      ref={inputRef}
+                      value={inputValue}
+                      onChange={(e) => setInputValue(e.target.value)}
+                      onKeyDown={handleKeyDown}
+                      placeholder={maxTags && items.length >= maxTags ? `Max ${maxTags} tags` : placeholder}
+                      disabled={maxTags && items.length >= maxTags}
+                      className="border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 h-8 pl-1"
+                    />
+                    {/* Only show dropdown trigger when we have tags to select from */}
+                    {availableTags.length > 0 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        className="h-8 w-8 p-0"
+                        onClick={() => setOpen(open ? false : true)}
+                        disabled={maxTags ? items.length >= maxTags : false}
+                      >
+                        <ChevronsUpDown className="h-4 w-4 text-muted-foreground" />
+                      </Button>
+                    )}
+                  </div>
+                </PopoverTrigger>
+                
+                <PopoverContent className="p-0 w-[300px]" align="start">
+                  <Command>
+                    <CommandInput 
+                      placeholder="Search for tags..." 
+                      value={inputValue}
+                      onValueChange={setInputValue}
+                      className="h-9" 
+                    />
+                    <CommandList>
+                      <CommandEmpty className="py-6 text-center text-sm">
+                        {inputValue && allowCustomTags ? (
+                          <div className="flex flex-col items-center gap-2">
+                            <p>No matching tags found</p>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => {
+                                handleAddTag();
+                                setOpen(false);
+                              }}
+                              disabled={!inputValue.trim()}
+                            >
+                              Create "{inputValue}"
+                            </Button>
+                          </div>
+                        ) : (
+                          <p>No tags found.</p>
+                        )}
+                      </CommandEmpty>
+                      
+                      {tagsLoading ? (
+                        <div className="py-6 text-center">
+                          <Spinner />
+                        </div>
+                      ) : (
+                        Object.entries(tagsByCategory).map(([category, categoryTags]) => (
                           <CommandGroup key={category} heading={category}>
-                            {tags.map((tag) => {
-                              const tagId = tag.id || tag.name;
-                              const isSelected = items.includes(tagId);
+                            {categoryTags.map((tag) => {
+                              const isSelected = items.includes(tag.id || tag.name);
                               
                               return (
                                 <CommandItem
-                                  key={tagId}
+                                  key={tag.id || tag.name}
                                   value={tag.name}
                                   onSelect={() => {
-                                    console.log(`[onSelect] CommandItem selected: ${tag.name} (ID: ${tagId})`);
-                                    handleSelectTag(tag);
+                                    if (isSelected) {
+                                      removeTag(tag.id || tag.name);
+                                    } else {
+                                      handleSelectTag(tag);
+                                    }
+                                    setOpen(false);
                                   }}
-                                  className="flex items-center cursor-pointer hover:bg-accent focus:bg-accent"
+                                  className={cn(
+                                    "flex items-center gap-2",
+                                    isSelected ? "bg-accent text-accent-foreground" : ""
+                                  )}
                                 >
-                                  <div 
-                                    className="flex items-center flex-1"
-                                  >
-                                    <Check
-                                      className={cn(
-                                        "mr-2 h-4 w-4",
-                                        isSelected ? "opacity-100" : "opacity-0"
-                                      )}
-                                    />
+                                  <div className={cn(
+                                    "flex-1 flex items-center justify-between"
+                                  )}>
                                     <span>{tag.name}</span>
+                                    {isSelected && <Check className="h-4 w-4" />}
                                   </div>
                                 </CommandItem>
                               );
                             })}
                           </CommandGroup>
-                        ))}
-                        
-                        {/* Option to create a new tag if not found */}
-                        {allowCustomTags && tagExists(inputValue.trim()) === undefined && (
-                          <CommandItem 
-                            onSelect={() => {
-                              console.log("[onSelect] Create tag selected:", inputValue.trim());
-                              handleAddTag();
-                            }}
-                            className="border-t cursor-pointer hover:bg-accent focus:bg-accent"
-                          >
-                            <div 
-                              className="flex items-center text-primary"
-                            >
-                              <span>Create tag "{inputValue.trim()}"</span>
-                            </div>
-                          </CommandItem>
-                        )}
-                      </>
-                    ) : (
-                      <CommandEmpty className="py-3 text-center">
-                        {allowCustomTags ? (
-                          <div>
-                            <p>No matching tags found</p>
-                            <p className="text-sm text-muted-foreground">Press Enter to create "{inputValue.trim()}"</p>
-                          </div>
-                        ) : (
-                          <p>No matching tags found</p>
-                        )}
-                      </CommandEmpty>
-                    )}
-                  </CommandList>
-                </Command>
-              )}
-            </div>
-          )}
+                        ))
+                      )}
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </div>
+            </Popover>
+          </div>
         </div>
         
-        <div className="text-xs text-muted-foreground">
-          Type to search tags. Press Enter or comma to add a new tag.
-        </div>
-        
+        {/* Error message */}
         {errorMessage && (
-          <div className="text-destructive text-sm">{errorMessage}</div>
+          <p className="text-sm text-destructive">{errorMessage}</p>
         )}
       </div>
     </div>
