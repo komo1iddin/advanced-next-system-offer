@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import { Toaster } from "sonner";
 
 // Import admin page layout
-import { AdminPageLayout } from "@/components/ui/admin-page-layout";
+import { AdminPageLayout } from "@/components/ui/admin/page-layout";
 
 // Import the offers table component
 import { StudyOffer } from "@/app/admin/types";
