@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Toaster } from "@/components/ui/toaster";
 
 // Import admin page layout
-import { AdminPageLayout } from "@/components/ui/admin-page-layout";
+import { AdminPageLayout } from "@/components/ui/admin/page-layout";
 
 // Import custom hook and components
 import { useLocationsQuery } from "./hooks/useLocationsQuery";

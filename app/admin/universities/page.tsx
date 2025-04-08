@@ -10,7 +10,7 @@ import { useDeleteUniversity } from "./hooks/useDeleteUniversity";
 import { useToggleUniversityActive } from "./hooks/useToggleUniversityActive";
 import { TanStackUniversitiesTable } from "@/app/components/tables/TanStackUniversitiesTable";
 import { Toaster } from "@/components/ui/toaster";
-import { AdminPageLayout } from "@/components/ui/admin-page-layout";
+import { AdminPageLayout } from "@/components/ui/admin/page-layout";
 import { useSession } from "next-auth/react";
 import { University } from "./hooks/useUniversitiesQuery";
 

@@ -7,7 +7,7 @@ import { PlusCircle } from "lucide-react";
 import { Toaster } from "@/components/ui/toaster";
 
 // Import admin page layout
-import { AdminPageLayout } from "@/components/ui/admin-page-layout";
+import { AdminPageLayout } from "@/components/ui/admin/page-layout";
 
 // Import custom hook and components
 import { useTagsQuery } from "./hooks/useTagsQuery";
