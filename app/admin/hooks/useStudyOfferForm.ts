@@ -1,5 +1,5 @@
 import { useForm } from "react-hook-form";
-import { StudyOffer } from "@/app/components/tables/OffersTable";
+import { StudyOffer } from "@/app/admin/types";
 
 export function useStudyOfferForm() {
   // Basic implementation of study offer form using react-hook-form

@@ -4,7 +4,7 @@ import { Edit, Trash2, ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { SortableHeader } from "../shared/SortableHeader";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { StudyOffer } from "../OffersTable";
+import { StudyOffer } from "@/app/admin/types";
 
 export interface OfferColumnsProps {
   onEdit?: (id: string) => void;

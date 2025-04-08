@@ -13,7 +13,7 @@ import { Toaster } from "sonner";
 import { AdminPageLayout } from "@/components/ui/admin-page-layout";
 
 // Import the offers table component
-import { StudyOffer } from "@/app/components/tables/OffersTable";
+import { StudyOffer } from "@/app/admin/types";
 import { TanStackOffersTable } from "@/app/components/tables/TanStackOffersTable";
 import {
   Dialog,

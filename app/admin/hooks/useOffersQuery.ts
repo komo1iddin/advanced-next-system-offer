@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { StudyOffer } from "@/app/components/tables/OffersTable";
+import { StudyOffer } from "@/app/admin/types";
 import { toast } from "sonner";
 
 // Query keys

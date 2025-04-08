@@ -12,7 +12,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { StudyOffer } from "./OffersTable";
+import { StudyOffer } from "@/app/admin/types";
 import { LayoutGrid } from "lucide-react";
 
 // Import UI components
