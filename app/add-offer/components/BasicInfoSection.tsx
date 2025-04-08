@@ -3,7 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FormSection } from "./FormSection";
-import LocationSelect from "@/components/LocationSelect";
+import LocationSelect from "@/app/components/features/location/LocationSelect";
 import Link from "next/link";
 
 // Available categories

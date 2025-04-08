@@ -28,8 +28,8 @@ import { useMediaQuery } from "@/hooks/use-media-query"
 import { useStudyOffers } from "@/hooks/use-study-offers"
 import { format } from "date-fns"
 import { useDebounce } from "@/hooks/use-debounce"
-import OfferCard from "@/components/study-offers/offer-card"
-import OfferCardSkeleton from "@/components/study-offers/offer-card-skeleton"
+import OfferCard from "@/app/components/features/study-offers/offer-card"
+import OfferCardSkeleton from "@/app/components/features/study-offers/offer-card-skeleton"
 
 // Color options for cards - solid colors instead of gradients
 const cardColors = [

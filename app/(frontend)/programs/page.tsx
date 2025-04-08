@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { GraduationCap, BookOpen, ChevronRight } from "lucide-react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { programCategories, type ProgramCategory } from "@/components/program-categories-sidebar";
+import { programCategories, type ProgramCategory } from "@/app/components/layout/program-categories-sidebar";
 
 export default function ProgramsPage() {
   const categories = Array.from(programCategories);

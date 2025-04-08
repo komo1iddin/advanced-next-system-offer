@@ -8,9 +8,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-
-// Import the program categories from our sidebar component
-import { programCategories, ProgramCategory, ProgramSubcategory } from "@/components/program-categories-sidebar";
+import { programCategories, ProgramCategory, ProgramSubcategory } from "@/app/components/layout/program-categories-sidebar";
 
 // Sample university data offering these programs
 const sampleUniversities = [
@@ -52,11 +50,11 @@ export default function SubcategoryPage() {
   const subcategoryId = params.subcategory as string;
   
   // Find the selected category and subcategory
-  const selectedCategory = programCategories.find(
+  const category = (programCategories as any).find(
     (category: ProgramCategory) => category.id === categoryId
   );
   
-  if (!selectedCategory) {
+  if (!category) {
     return (
       <div className="p-6">
         <Alert variant="destructive">
@@ -74,7 +72,7 @@ export default function SubcategoryPage() {
     );
   }
   
-  const selectedSubcategory = selectedCategory.subcategories.find(
+  const selectedSubcategory = category.subcategories.find(
     (subcategory: ProgramSubcategory) => subcategory.id === subcategoryId
   );
   
@@ -86,8 +84,8 @@ export default function SubcategoryPage() {
           <AlertDescription>
             The program you requested does not exist. Please select a valid program from the sidebar.
             <div className="mt-2">
-              <Link href={`/programs/${selectedCategory.id}`} className="text-primary underline">
-                Go back to {selectedCategory.name} programs
+              <Link href={`/programs/${category.id}`} className="text-primary underline">
+                Go back to {category.name} programs
               </Link>
             </div>
           </AlertDescription>
@@ -105,13 +103,13 @@ export default function SubcategoryPage() {
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbLink href={`/programs/${selectedCategory.id}`}>
-              {selectedCategory.name}
+            <BreadcrumbLink href={`/programs/${category.id}`}>
+              {category.name}
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbLink href={`/programs/${selectedCategory.id}/${selectedSubcategory.id}`}>
+            <BreadcrumbLink href={`/programs/${category.id}/${selectedSubcategory.id}`}>
               {selectedSubcategory.name}
             </BreadcrumbLink>
           </BreadcrumbItem>

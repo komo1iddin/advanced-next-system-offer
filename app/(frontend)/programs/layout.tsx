@@ -1,6 +1,6 @@
 "use client";
 
-import { ProgramCategoriesSidebar } from "@/components/program-categories-sidebar";
+import { ProgramCategoriesSidebar } from "@/app/components/layout/program-categories-sidebar";
 
 export default function ProgramsLayout({
   children,

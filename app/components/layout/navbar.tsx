@@ -5,8 +5,8 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Menu, X, School } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { ModeToggle } from "@/components/mode-toggle"
-import { UserMenu } from "@/components/user-menu"
+import { ModeToggle } from "@/app/components/ui/mode-toggle"
+import { UserMenu } from "@/app/components/features/user/user-menu"
 
 export function Navbar() {
   const pathname = usePathname()

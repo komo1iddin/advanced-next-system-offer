@@ -6,7 +6,7 @@ import { BookOpen, ArrowRight, GraduationCap } from "lucide-react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
-import { programCategories, type ProgramCategory, type ProgramSubcategory } from "@/components/program-categories-sidebar";
+import { programCategories, type ProgramCategory, type ProgramSubcategory } from "@/app/components/layout/program-categories-sidebar";
 
 export default function CategoryPage() {
   const params = useParams();
