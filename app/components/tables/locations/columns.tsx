@@ -119,13 +119,13 @@ export function getLocationColumns({
     }),
     columnHelper.accessor((row) => row, {
       id: "actions",
-      header: "",
+      header: ({ column }) => <SortableHeader column={column} title="Actions" align="center" />,
       cell: (info) => {
         const location = info.getValue();
         const isProvince = location.type === 'province';
         
         return (
-          <div className="flex justify-end space-x-2">
+          <div className="flex justify-center space-x-2">
             {(isProvince && onEditProvince) || (!isProvince && onEditCity) ? (
               <Button
                 variant="outline"

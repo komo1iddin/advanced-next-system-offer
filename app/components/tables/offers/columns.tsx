@@ -105,11 +105,11 @@ export function getOfferColumns({
     }),
     columnHelper.accessor((row) => row, {
       id: "actions",
-      header: "",
+      header: ({ column }) => <SortableHeader column={column} title="Actions" align="center" />,
       cell: (info) => {
         const offer = info.getValue();
         return (
-          <div className="flex justify-end space-x-2">
+          <div className="flex justify-center space-x-2">
             {onEdit && (
               <Button
                 variant="outline"
