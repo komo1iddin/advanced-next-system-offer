@@ -1,13 +1,13 @@
 import { ColumnDef, createColumnHelper } from "@tanstack/react-table";
-import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
-import { Pencil, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { SortableHeader } from "../shared/SortableHeader";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { TableSelectionCheckbox } from "../shared/TableSelectionCheckbox";
+import { TableStatusToggle } from "../shared/TableStatusToggle";
+import { TableActionButtons } from "../shared/TableActionButtons";
 import { LocationRow } from "@/app/admin/locations/lib/utils";
 import { Province, City } from "@/app/admin/locations/lib/location-service";
 
+// Standardized interface for column props
 export interface LocationColumnsProps {
   onEditProvince?: (province: Province) => void;
   onEditCity?: (city: City) => void;
@@ -30,38 +30,37 @@ export function getLocationColumns({
   const columnHelper = createColumnHelper<LocationRow>();
 
   return [
+    // Selection column
     {
       id: "select",
-      header: ({ table }: any) => (
-        <div className="px-1">
-          <input
-            type="checkbox"
-            className="rounded border-gray-300"
+      header: ({ table }) => (
+        <div className="text-center">
+          <TableSelectionCheckbox
             checked={
               table.getIsAllPageRowsSelected() ||
               (table.getIsSomePageRowsSelected() && "indeterminate")
             }
-            onChange={(e) => table.toggleAllPageRowsSelected(!!e.target.checked)}
-            aria-label="Select all"
+            onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+            label="Select all rows"
           />
         </div>
       ),
-      cell: ({ row }: any) => (
-        <div className="px-1">
-          <input
-            type="checkbox"
-            className="rounded border-gray-300"
+      cell: ({ row }) => (
+        <div className="text-center">
+          <TableSelectionCheckbox
             checked={row.getIsSelected()}
-            onChange={(e) => row.toggleSelected(!!e.target.checked)}
-            aria-label="Select row"
+            onCheckedChange={(value) => row.toggleSelected(!!value)}
+            label="Select row"
           />
         </div>
       ),
       enableSorting: false,
       enableHiding: false,
     },
+    
+    // Name column
     columnHelper.accessor("name", {
-      header: ({ column }) => <SortableHeader column={column} title="Name" />,
+      header: ({ column }) => <SortableHeader column={column} title="Name" align="left" />,
       cell: (info) => {
         const location = info.row.original;
         return (
@@ -76,47 +75,39 @@ export function getLocationColumns({
         );
       },
     }),
+    
+    // Type column
     columnHelper.accessor("type", {
-      header: ({ column }) => <SortableHeader column={column} title="Type" />,
+      header: ({ column }) => <SortableHeader column={column} title="Type" align="center" />,
       cell: (info) => {
         const type = info.getValue();
         return (
-          <Badge 
-            variant={type === 'province' ? 'default' : 'outline'}
-            className={type === 'province' ? 'bg-blue-500' : 'border-blue-500 text-blue-500'}
-          >
-            {type === 'province' ? 'Province' : 'City'}
-          </Badge>
+          <div className="text-center">
+            <Badge 
+              variant={type === 'province' ? 'default' : 'outline'}
+              className={type === 'province' ? 'bg-blue-500' : 'border-blue-500 text-blue-500'}
+            >
+              {type === 'province' ? 'Province' : 'City'}
+            </Badge>
+          </div>
         );
       },
     }),
+    
+    // Status column
     columnHelper.accessor("active", {
-      header: ({ column }) => <SortableHeader column={column} title="Status" />,
+      header: ({ column }) => <SortableHeader column={column} title="Status" align="center" />,
       cell: (info) => {
         const isActive = info.getValue();
-        const location = info.row.original;
-        
-        return onToggleActive ? (
-          <div className="flex items-center">
-            <Switch
-              checked={isActive}
-              onCheckedChange={(checked) => 
-                onToggleActive(location.id, location.type, checked)
-              }
-            />
-            <span className="ml-2">{isActive ? "Active" : "Inactive"}</span>
+        return (
+          <div className="text-center">
+            <TableStatusToggle isActive={isActive} />
           </div>
-        ) : (
-          <span
-            className={`inline-block px-2 py-1 rounded-full text-xs ${
-              isActive ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
-            }`}
-          >
-            {isActive ? "Active" : "Inactive"}
-          </span>
         );
       },
     }),
+    
+    // Actions column
     columnHelper.accessor((row) => row, {
       id: "actions",
       header: ({ column }) => <SortableHeader column={column} title="Actions" align="center" />,
@@ -124,64 +115,40 @@ export function getLocationColumns({
         const location = info.getValue();
         const isProvince = location.type === 'province';
         
+        // Custom action handlers for different location types
+        const handleEdit = () => {
+          if (isProvince && onEditProvince) {
+            const province = provinces.find(p => p._id === location.id);
+            if (province) onEditProvince(province);
+          } else if (!isProvince && onEditCity) {
+            const city = cities.find(c => c._id === location.id);
+            if (city) onEditCity(city);
+          }
+        };
+        
+        const handleDelete = (id: string) => {
+          if (isProvince && onDeleteProvince) {
+            onDeleteProvince(id);
+          } else if (!isProvince && onDeleteCity) {
+            onDeleteCity(id);
+          }
+        };
+        
+        const handleToggleActive = (id: string, active: boolean) => {
+          if (onToggleActive) {
+            onToggleActive(id, isProvince ? 'province' : 'city', active);
+          }
+        };
+        
         return (
-          <div className="flex justify-center space-x-2">
-            {(isProvince && onEditProvince) || (!isProvince && onEditCity) ? (
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => {
-                  if (isProvince) {
-                    const province = provinces.find(p => p._id === location.id);
-                    if (province && onEditProvince) onEditProvince(province);
-                  } else {
-                    const city = cities.find(c => c._id === location.id);
-                    if (city && onEditCity) onEditCity(city);
-                  }
-                }}
-              >
-                <Pencil className="h-4 w-4" />
-              </Button>
-            ) : null}
-            
-            {(isProvince && onDeleteProvince) || (!isProvince && onDeleteCity) ? (
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="text-red-500 hover:text-red-600"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Delete {isProvince ? "Province" : "City"}</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Are you sure you want to delete {location.name}? This action cannot be undone.
-                      {isProvince && ' All cities in this province will also be deleted.'}
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction
-                      className="bg-red-500 hover:bg-red-600"
-                      onClick={() => {
-                        if (isProvince && onDeleteProvince) {
-                          onDeleteProvince(location.id);
-                        } else if (!isProvince && onDeleteCity) {
-                          onDeleteCity(location.id);
-                        }
-                      }}
-                    >
-                      Delete
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            ) : null}
-          </div>
+          <TableActionButtons
+            id={location.id}
+            name={`${isProvince ? 'Province' : 'City'}: ${location.name}`}
+            onEdit={(isProvince && onEditProvince) || (!isProvince && onEditCity) ? handleEdit : undefined}
+            onDelete={(isProvince && onDeleteProvince) || (!isProvince && onDeleteCity) ? handleDelete : undefined}
+            onToggleActive={onToggleActive ? handleToggleActive : undefined}
+            isActive={location.active}
+          />
         );
       },
       enableSorting: false,

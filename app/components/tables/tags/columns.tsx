@@ -1,197 +1,124 @@
 import { ColumnDef, createColumnHelper } from "@tanstack/react-table";
-import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
-import { Pencil, Trash2 } from "lucide-react";
+import { Tag as TagIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { SortableHeader } from "../shared/SortableHeader";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { TagRow } from "@/app/admin/tags/lib/utils";
 import { Tag } from "@/app/admin/tags/lib/tag-service";
-import { useState } from "react";
+import { TableSelectionCheckbox } from "../shared/TableSelectionCheckbox";
+import { TableStatusToggle } from "../shared/TableStatusToggle";
+import { TableActionButtons } from "../shared/TableActionButtons";
+import { formatDate } from "../shared/FormatUtils";
 
-// Helper function to format date
-const formatDate = (dateString: Date) => {
-  return new Intl.DateTimeFormat('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric'
-  }).format(dateString);
-};
-
+// Standardized interface for column props
 export interface TagColumnsProps {
   onEdit?: (tag: Tag) => void;
   onDelete?: (tagId: string) => void;
   onToggleActive?: (tagId: string, active: boolean) => void;
+  onView?: (tagId: string) => void;
 }
 
 export function getTagColumns({
   onEdit,
   onDelete,
   onToggleActive,
+  onView,
 }: TagColumnsProps): ColumnDef<TagRow, any>[] {
   const columnHelper = createColumnHelper<TagRow>();
 
   return [
+    // Selection column
     {
       id: "select",
-      header: ({ table }: any) => (
-        <div className="px-1">
-          <input
-            type="checkbox"
-            className="rounded border-gray-300"
+      header: ({ table }) => (
+        <div className="text-center">
+          <TableSelectionCheckbox
             checked={
               table.getIsAllPageRowsSelected() ||
               (table.getIsSomePageRowsSelected() && "indeterminate")
             }
-            onChange={(e) => table.toggleAllPageRowsSelected(!!e.target.checked)}
-            aria-label="Select all"
+            onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+            label="Select all rows"
           />
         </div>
       ),
-      cell: ({ row }: any) => (
-        <div className="px-1">
-          <input
-            type="checkbox"
-            className="rounded border-gray-300"
+      cell: ({ row }) => (
+        <div className="text-center">
+          <TableSelectionCheckbox
             checked={row.getIsSelected()}
-            onChange={(e) => row.toggleSelected(!!e.target.checked)}
-            aria-label="Select row"
+            onCheckedChange={(value) => row.toggleSelected(!!value)}
+            label="Select row"
           />
         </div>
       ),
       enableSorting: false,
       enableHiding: false,
     },
+    
+    // Name column
     columnHelper.accessor("name", {
-      header: ({ column }) => <SortableHeader column={column} title="Name" />,
+      header: ({ column }) => <SortableHeader column={column} title="Name" align="left" />,
       cell: (info) => <span className="font-medium">{info.getValue()}</span>,
     }),
+    
+    // Category column
     columnHelper.accessor("category", {
-      header: ({ column }) => <SortableHeader column={column} title="Category" />,
+      header: ({ column }) => <SortableHeader column={column} title="Category" align="center" />,
       cell: (info) => (
-        <Badge variant="outline">{info.getValue()}</Badge>
+        <div className="text-center">
+          <Badge variant="outline">{info.getValue()}</Badge>
+        </div>
       ),
     }),
+    
+    // Status column (display only)
     columnHelper.accessor("active", {
-      header: ({ column }) => <SortableHeader column={column} title="Status" />,
-      cell: (info) => {
-        const initialActive = info.getValue();
-        // We need to use a component here to maintain local state
-        return (
-          <StatusSwitchCell 
-            initialActive={initialActive} 
-            id={info.row.original.id} 
-            onToggle={onToggleActive} 
+      header: ({ column }) => <SortableHeader column={column} title="Status" align="center" />,
+      cell: (info) => (
+        <div className="text-center">
+          <TableStatusToggle
+            isActive={info.getValue()}
           />
-        );
-      },
+        </div>
+      ),
     }),
+    
+    // Created At column
     columnHelper.accessor("createdAt", {
-      header: ({ column }) => <SortableHeader column={column} title="Created" />,
-      cell: (info) => formatDate(info.getValue()),
+      header: ({ column }) => <SortableHeader column={column} title="Created" align="center" />,
+      cell: (info) => <div className="text-center">{formatDate(info.getValue())}</div>,
     }),
+    
+    // Actions column
     columnHelper.accessor((row) => row, {
       id: "actions",
-      header: "",
+      header: ({ column }) => <SortableHeader column={column} title="Actions" align="center" />,
       cell: (info) => {
         const tag = info.getValue();
+        
         return (
-          <div className="flex justify-end space-x-2">
-            {onEdit && (
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => {
-                  const originalTag: Tag = {
+          <TableActionButtons
+            id={tag.id}
+            name={tag.name}
+            onEdit={
+              onEdit 
+                ? () => onEdit({
                     _id: tag.id,
                     name: tag.name,
                     category: tag.category,
                     active: tag.active,
                     createdAt: tag.createdAt.toString(),
                     updatedAt: new Date().toString(),
-                  };
-                  onEdit(originalTag);
-                }}
-              >
-                <Pencil className="h-4 w-4" />
-              </Button>
-            )}
-            
-            {onDelete && (
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="text-red-500 hover:text-red-600"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Delete Tag</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Are you sure you want to delete the tag "{tag.name}"? This action cannot be undone.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction
-                      className="bg-red-500 hover:bg-red-600"
-                      onClick={() => onDelete(tag.id)}
-                    >
-                      Delete
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            )}
-          </div>
+                  })
+                : undefined
+            }
+            onDelete={onDelete ? (id) => onDelete(id) : undefined}
+            onToggleActive={onToggleActive ? (id, active) => onToggleActive(id, active) : undefined}
+            isActive={tag.active}
+            onView={onView ? (id) => onView(id) : undefined}
+          />
         );
       },
       enableSorting: false,
     }),
   ];
-}
-
-// Status switch component with local state
-function StatusSwitchCell({
-  initialActive,
-  id,
-  onToggle
-}: {
-  initialActive: boolean;
-  id: string;
-  onToggle?: (id: string, active: boolean) => void;
-}) {
-  const [isActive, setIsActive] = useState(initialActive);
-  
-  if (!onToggle) {
-    return (
-      <span
-        className={`inline-block px-2 py-1 rounded-full text-xs ${
-          isActive ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
-        }`}
-      >
-        {isActive ? "Active" : "Inactive"}
-      </span>
-    );
-  }
-  
-  return (
-    <div className="flex items-center">
-      <Switch
-        checked={isActive}
-        onCheckedChange={(checked) => {
-          // Immediately update local state for fast UI feedback
-          setIsActive(checked);
-          
-          // Then call the handler to persist the change
-          onToggle(id, checked);
-        }}
-      />
-      <span className="ml-2">{isActive ? "Active" : "Inactive"}</span>
-    </div>
-  );
 } 

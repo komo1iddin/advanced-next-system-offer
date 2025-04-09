@@ -2,14 +2,15 @@
 
 import { ColumnDef, createColumnHelper } from "@tanstack/react-table";
 import { UniversityDirect } from "@/app/admin/university-directs/hooks/useUniversityDirectsQuery";
-import { Button } from "@/components/ui/button";
-import { Pencil, Trash2, UserPlus } from "lucide-react";
-import { Switch } from "@/components/ui/switch";
-import { ContactMethods } from "./ContactMethods";
+import { UserPlus } from "lucide-react";
 import { SortableHeader } from "../shared/SortableHeader";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { TableSelectionCheckbox } from "../shared/TableSelectionCheckbox";
+import { TableStatusToggle } from "../shared/TableStatusToggle";
+import { TableActionButtons } from "../shared/TableActionButtons";
+import { ContactMethods } from "./ContactMethods";
 
-interface UniversityDirectColumnsProps {
+// Standardized interface for column props
+export interface UniversityDirectColumnsProps {
   onEdit?: (id: string) => void;
   onDelete?: (id: string) => void;
   onToggleActive?: (id: string, active: boolean) => void;
@@ -23,44 +24,47 @@ export function getUniversityDirectColumns({
   const columnHelper = createColumnHelper<UniversityDirect>();
 
   return [
+    // Selection column
     {
       id: "select",
-      header: ({ table }: any) => (
-        <div className="px-1">
-          <input
-            type="checkbox"
-            className="rounded border-gray-300"
+      header: ({ table }) => (
+        <div className="text-center">
+          <TableSelectionCheckbox
             checked={
               table.getIsAllPageRowsSelected() ||
               (table.getIsSomePageRowsSelected() && "indeterminate")
             }
-            onChange={(e) => table.toggleAllPageRowsSelected(!!e.target.checked)}
-            aria-label="Select all"
+            onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+            label="Select all rows"
           />
         </div>
       ),
-      cell: ({ row }: any) => (
-        <div className="px-1">
-          <input
-            type="checkbox"
-            className="rounded border-gray-300"
+      cell: ({ row }) => (
+        <div className="text-center">
+          <TableSelectionCheckbox
             checked={row.getIsSelected()}
-            onChange={(e) => row.toggleSelected(!!e.target.checked)}
-            aria-label="Select row"
+            onCheckedChange={(value) => row.toggleSelected(!!value)}
+            label="Select row"
           />
         </div>
       ),
       enableSorting: false,
       enableHiding: false,
     },
+    
+    // University Name column
     columnHelper.accessor("universityName", {
       header: ({ column }) => <SortableHeader column={column} title="University" align="left" />,
       cell: (info) => <span className="font-medium">{info.getValue()}</span>,
     }),
+    
+    // Department Name column
     columnHelper.accessor("departmentName", {
       header: ({ column }) => <SortableHeader column={column} title="Department" align="left" />,
       cell: (info) => info.getValue() || "-",
     }),
+    
+    // Contact Person column
     columnHelper.accessor("contactPersonName", {
       header: ({ column }) => <SortableHeader column={column} title="Contact Person" align="left" />,
       cell: (info) => {
@@ -82,84 +86,47 @@ export function getUniversityDirectColumns({
         )
       },
     }),
+    
+    // Contact Methods column
     columnHelper.display({
       id: "contactMethods",
       header: ({ column }) => <SortableHeader column={column} title="Contact Methods" align="center" />,
-      cell: (info) => <ContactMethods universityDirect={info.row.original} />,
+      cell: (info) => <div className="text-center"><ContactMethods universityDirect={info.row.original} /></div>,
     }),
+    
+    // Status column
     columnHelper.accessor("active", {
       header: ({ column }) => <SortableHeader column={column} title="Status" align="center" />,
       cell: (info) => {
         const isActive = info.getValue();
-        return onToggleActive ? (
-          <div className="flex items-center justify-center">
-            <Switch
-              checked={isActive}
-              onCheckedChange={() => 
-                onToggleActive(info.row.original._id, !isActive)
-              }
-            />
-            <span className="ml-2">{isActive ? "Active" : "Inactive"}</span>
-          </div>
-        ) : (
+        return (
           <div className="text-center">
-            <span
-              className={`inline-block px-2 py-1 rounded-full text-xs ${
-                isActive ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
-              }`}
-            >
-              {isActive ? "Active" : "Inactive"}
-            </span>
+            <TableStatusToggle isActive={isActive} />
           </div>
         );
       },
     }),
-    columnHelper.display({
+    
+    // Actions column
+    columnHelper.accessor("_id", {
       id: "actions",
       header: ({ column }) => <SortableHeader column={column} title="Actions" align="center" />,
       cell: (info) => {
+        const id = info.getValue();
         const universityDirect = info.row.original;
+        
         return (
-          <div className="flex items-center justify-center gap-2">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => onEdit && onEdit(universityDirect._id)}
-            >
-              <Pencil className="h-4 w-4" />
-            </Button>
-            
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="text-red-500 hover:text-red-600"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Delete University Direct</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Are you sure you want to delete this university direct contact? This action cannot be undone.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction
-                    className="bg-red-500 hover:bg-red-600"
-                    onClick={() => onDelete && onDelete(universityDirect._id)}
-                  >
-                    Delete
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </div>
+          <TableActionButtons
+            id={id}
+            name={`${universityDirect.universityName} - ${universityDirect.contactPersonName || 'Direct Contact'}`}
+            onEdit={onEdit}
+            onDelete={onDelete}
+            onToggleActive={onToggleActive}
+            isActive={universityDirect.active}
+          />
         );
       },
+      enableSorting: false,
     }),
   ];
 } 

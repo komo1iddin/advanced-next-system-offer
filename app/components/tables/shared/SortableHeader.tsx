@@ -8,18 +8,27 @@ interface SortableHeaderProps<TData, TValue> {
   column: Column<TData, TValue>;
   title: string;
   className?: string;
+  align?: "left" | "center" | "right";
 }
 
 export function SortableHeader<TData, TValue>({
   column,
   title,
   className,
+  align = "left",
 }: SortableHeaderProps<TData, TValue>) {
+  // Default alignment classes
+  const alignmentClass = {
+    left: "justify-start",
+    center: "justify-center",
+    right: "justify-end",
+  }[align];
+
   return (
     <Button
       variant="ghost"
       onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-      className={`flex items-center ${className || ""}`}
+      className={`flex items-center w-full ${alignmentClass} ${className || ""}`}
     >
       {title}
       <span className="ml-2">

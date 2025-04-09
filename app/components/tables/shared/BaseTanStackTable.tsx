@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, useState, useEffect } from "react";
+import { useState, useEffect, ReactNode } from "react";
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -12,8 +12,10 @@ import {
   getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
-  flexRender,
+  Table as TanStackTable,
+  VisibilityState,
 } from "@tanstack/react-table";
+import { LucideIcon } from "lucide-react";
 
 // Import UI components
 import {
@@ -24,53 +26,103 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { flexRender } from "@tanstack/react-table";
 
 // Import shared components
 import { usePersistentTableState } from "@/hooks/use-persistent-table-state";
 import { TablePagination } from "./TablePagination";
 import { TableLoadingState, TableErrorState, TableEmptyState } from "./TableStates";
 
-export interface BaseTanStackTableProps<TData> {
+// Column metadata type
+export type ColumnMeta = {
+  className?: string;
+  [key: string]: any;
+};
+
+interface BaseTanStackTableProps<TData> {
+  // Table settings
   data: TData[];
   columns: ColumnDef<TData, any>[];
+  tableId: string;  // Unique ID for persisting state - e.g., "offers", "agents", etc.
+  itemsName: string; // Display name for items - e.g., "offers", "agents", etc.
+  
+  // Empty state
+  emptyIcon?: LucideIcon;
+  emptyTitle?: string;
+  emptyDescription?: string;
+  
+  // Data state
   isLoading?: boolean;
   isError?: boolean;
   error?: unknown;
   refetch?: () => void;
+  
+  // Filters
   globalFilter?: string;
   onGlobalFilterChange?: (value: string) => void;
+  
+  // Row selection
   onSelectionChange?: (selectedRows: TData[]) => void;
-  stateKey: string;
-  itemsName: string;
-  emptyStateProps?: {
-    icon: any;
-    title: string;
-    description: string;
-  };
+  enableRowSelection?: boolean;
+  
+  // Column visibility
+  defaultColumnVisibility?: VisibilityState;
+  
+  // Additional styling
+  tableClassName?: string;
+  cellClassName?: (cell: any) => string | undefined;
+
+  // Custom content
+  topContent?: ReactNode;
+  bottomContent?: ReactNode;
 }
 
 export function BaseTanStackTable<TData>({
+  // Table settings
   data = [],
   columns,
+  tableId,
+  itemsName,
+  
+  // Empty state
+  emptyIcon,
+  emptyTitle,
+  emptyDescription,
+  
+  // Data state
   isLoading = false,
   isError = false,
   error,
   refetch,
+  
+  // Filters
   globalFilter = "",
   onGlobalFilterChange,
+  
+  // Row selection
   onSelectionChange,
-  stateKey,
-  itemsName,
-  emptyStateProps,
+  enableRowSelection = true,
+  
+  // Column visibility
+  defaultColumnVisibility,
+  
+  // Additional styling
+  tableClassName,
+  cellClassName,
+  
+  // Custom content
+  topContent,
+  bottomContent,
 }: BaseTanStackTableProps<TData>) {
   // Table state
-  const [sorting, setSorting] = usePersistentTableState<SortingState>(`${stateKey}-sorting`, []);
-  const [columnFilters, setColumnFilters] = usePersistentTableState<ColumnFiltersState>(`${stateKey}-filters`, []);
-  const [pagination, setPagination] = usePersistentTableState<PaginationState>(`${stateKey}-pagination`, {
+  const [sorting, setSorting] = usePersistentTableState<SortingState>(`${tableId}-sorting`, []);
+  const [columnFilters, setColumnFilters] = usePersistentTableState<ColumnFiltersState>(`${tableId}-filters`, []);
+  const [pagination, setPagination] = usePersistentTableState<PaginationState>(`${tableId}-pagination`, {
     pageIndex: 0,
     pageSize: 10,
   });
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(defaultColumnVisibility || {});
   
   // Initialize table
   const table = useReactTable({
@@ -82,13 +134,15 @@ export function BaseTanStackTable<TData>({
       globalFilter,
       pagination,
       rowSelection,
+      columnVisibility,
     },
-    enableRowSelection: true,
+    enableRowSelection,
     onRowSelectionChange: setRowSelection,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     onGlobalFilterChange: onGlobalFilterChange,
     onPaginationChange: setPagination,
+    onColumnVisibilityChange: setColumnVisibility,
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
@@ -126,9 +180,9 @@ export function BaseTanStackTable<TData>({
     return (
       <TableEmptyState
         headerGroups={table.getHeaderGroups()}
-        icon={emptyStateProps?.icon}
-        title={emptyStateProps?.title || `No ${itemsName} found`}
-        description={emptyStateProps?.description || `Try adjusting your search or add a new ${itemsName.endsWith('s') ? itemsName.slice(0, -1) : itemsName}.`}
+        icon={emptyIcon}
+        title={emptyTitle || `No ${itemsName} found`}
+        description={emptyDescription || `Try adjusting your search or add a new ${itemsName.slice(0, -1)}.`}
       />
     );
   }
@@ -136,13 +190,18 @@ export function BaseTanStackTable<TData>({
   // Render the standard table
   return (
     <div className="space-y-4">
-      <div className="rounded-md border">
+      {topContent}
+    
+      <div className={`rounded-md border ${tableClassName || ''}`}>
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id}>
+                  <TableHead 
+                    key={header.id} 
+                    className={(header.column.columnDef.meta as ColumnMeta)?.className}
+                  >
                     {header.isPlaceholder
                       ? null
                       : flexRender(
@@ -158,7 +217,10 @@ export function BaseTanStackTable<TData>({
             {table.getRowModel().rows.map((row) => (
               <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
                 {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id}>
+                  <TableCell 
+                    key={cell.id} 
+                    className={`${(cell.column.columnDef.meta as ColumnMeta)?.className || ''} ${cellClassName ? cellClassName(cell) : ''}`}
+                  >
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </TableCell>
                 ))}
@@ -169,6 +231,8 @@ export function BaseTanStackTable<TData>({
       </div>
 
       <TablePagination table={table} itemsName={itemsName} />
+      
+      {bottomContent}
     </div>
   );
 } 

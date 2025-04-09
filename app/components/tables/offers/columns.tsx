@@ -1,11 +1,12 @@
 import { ColumnDef, createColumnHelper } from "@tanstack/react-table";
-import { Button } from "@/components/ui/button";
-import { Edit, Trash2, ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { LayoutGrid } from "lucide-react";
 import { SortableHeader } from "../shared/SortableHeader";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { TableSelectionCheckbox } from "../shared/TableSelectionCheckbox";
+import { TableActionButtons } from "../shared/TableActionButtons";
 import { StudyOffer } from "@/app/admin/types";
 
+// Standardized interface for column props
 export interface OfferColumnsProps {
   onEdit?: (id: string) => void;
   onDelete?: (id: string) => void;
@@ -22,46 +23,47 @@ export function getOfferColumns({
   const columnHelper = createColumnHelper<StudyOffer>();
 
   return [
+    // Selection column
     {
       id: "select",
-      header: ({ table }: any) => (
-        <div className="px-1">
-          <input
-            type="checkbox"
-            className="rounded border-gray-300"
+      header: ({ table }) => (
+        <div className="text-center">
+          <TableSelectionCheckbox
             checked={
               table.getIsAllPageRowsSelected() ||
               (table.getIsSomePageRowsSelected() && "indeterminate")
             }
-            onChange={(e) => table.toggleAllPageRowsSelected(!!e.target.checked)}
-            aria-label="Select all"
+            onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+            label="Select all rows"
           />
         </div>
       ),
-      cell: ({ row }: any) => (
-        <div className="px-1">
-          <input
-            type="checkbox"
-            className="rounded border-gray-300"
+      cell: ({ row }) => (
+        <div className="text-center">
+          <TableSelectionCheckbox
             checked={row.getIsSelected()}
-            onChange={(e) => row.toggleSelected(!!e.target.checked)}
-            aria-label="Select row"
+            onCheckedChange={(value) => row.toggleSelected(!!value)}
+            label="Select row"
           />
         </div>
       ),
       enableSorting: false,
       enableHiding: false,
     },
+    
+    // ID column
     columnHelper.accessor("uniqueId", {
-      header: ({ column }) => <SortableHeader column={column} title="ID" />,
+      header: ({ column }) => <SortableHeader column={column} title="ID" align="left" />,
       cell: (info) => (
         <span className="font-mono text-xs">
           {info.getValue() || "—"}
         </span>
       ),
     }),
+    
+    // Title column
     columnHelper.accessor("title", {
-      header: ({ column }) => <SortableHeader column={column} title="Title" />,
+      header: ({ column }) => <SortableHeader column={column} title="Title" align="left" />,
       cell: (info) => {
         const offer = info.row.original;
         return (
@@ -77,94 +79,56 @@ export function getOfferColumns({
         );
       },
     }),
+    
+    // University column
     columnHelper.accessor("universityName", {
-      header: ({ column }) => <SortableHeader column={column} title="University" />,
+      header: ({ column }) => <SortableHeader column={column} title="University" align="left" />,
       cell: (info) => info.getValue(),
     }),
+    
+    // Location column
     columnHelper.accessor("location", {
-      header: ({ column }) => <SortableHeader column={column} title="Location" />,
-      cell: (info) => info.getValue(),
+      header: ({ column }) => <SortableHeader column={column} title="Location" align="center" />,
+      cell: (info) => <div className="text-center">{info.getValue()}</div>,
       meta: {
         className: "hidden md:table-cell",
       },
     }),
+    
+    // Degree column
     columnHelper.accessor("degreeLevel", {
-      header: ({ column }) => <SortableHeader column={column} title="Degree" />,
-      cell: (info) => info.getValue(),
+      header: ({ column }) => <SortableHeader column={column} title="Degree" align="center" />,
+      cell: (info) => <div className="text-center">{info.getValue()}</div>,
       meta: {
         className: "hidden md:table-cell",
       },
     }),
+    
+    // Tuition column
     columnHelper.accessor((row) => `${row.tuitionFees.amount} ${row.tuitionFees.currency}/${row.tuitionFees.period}`, {
       id: "tuition",
-      header: ({ column }) => <SortableHeader column={column} title="Tuition" />,
-      cell: (info) => info.getValue(),
+      header: ({ column }) => <SortableHeader column={column} title="Tuition" align="center" />,
+      cell: (info) => <div className="text-center">{info.getValue()}</div>,
       meta: {
         className: "hidden md:table-cell",
       },
     }),
+    
+    // Actions column
     columnHelper.accessor((row) => row, {
       id: "actions",
       header: ({ column }) => <SortableHeader column={column} title="Actions" align="center" />,
       cell: (info) => {
         const offer = info.getValue();
         return (
-          <div className="flex justify-center space-x-2">
-            {onEdit && (
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => onEdit(offer._id)}
-                title="Edit"
-              >
-                <Edit className="h-4 w-4" />
-              </Button>
-            )}
-            
-            {onDelete && (
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="text-red-500 hover:text-red-600"
-                    disabled={deletingId === offer._id}
-                    title="Delete"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Delete Study Offer</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Are you sure you want to delete "{offer.title}"? This action cannot be undone.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction
-                      className="bg-red-500 hover:bg-red-600"
-                      onClick={() => onDelete(offer._id)}
-                    >
-                      Delete
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            )}
-            
-            {onView && (
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => onView(offer._id)}
-                title="View"
-              >
-                <ExternalLink className="h-4 w-4" />
-              </Button>
-            )}
-          </div>
+          <TableActionButtons
+            id={offer._id}
+            name={offer.title}
+            onEdit={onEdit}
+            onDelete={onDelete}
+            onView={onView}
+            isDeleting={deletingId === offer._id}
+          />
         );
       },
       enableSorting: false,

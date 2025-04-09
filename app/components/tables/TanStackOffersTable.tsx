@@ -1,41 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import {
-  ColumnFiltersState,
-  PaginationState,
-  RowSelectionState,
-  SortingState,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  useReactTable,
-} from "@tanstack/react-table";
-import { StudyOffer } from "@/app/admin/types";
 import { LayoutGrid } from "lucide-react";
-
-// Import UI components
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { flexRender } from "@tanstack/react-table";
-
-// Import shared components
-import { usePersistentTableState } from "@/hooks/use-persistent-table-state";
-import { TablePagination } from "./shared/TablePagination";
-import { TableLoadingState, TableErrorState, TableEmptyState } from "./shared/TableStates";
+import { StudyOffer } from "@/app/admin/types";
+import { BaseTanStackTable } from "./shared/BaseTanStackTable";
 import { getOfferColumns } from "./offers/columns";
-
-// Define column meta type
-export type OfferColumnMeta = {
-  className?: string;
-};
 
 interface TanStackOffersTableProps {
   data: StudyOffer[];
@@ -53,7 +21,7 @@ interface TanStackOffersTableProps {
 }
 
 export function TanStackOffersTable({
-  data: offers = [],
+  data = [],
   isLoading = false,
   isError = false,
   error,
@@ -66,15 +34,6 @@ export function TanStackOffersTable({
   onGlobalFilterChange,
   deletingId
 }: TanStackOffersTableProps) {
-  // Table state
-  const [sorting, setSorting] = usePersistentTableState<SortingState>("offers-sorting", []);
-  const [columnFilters, setColumnFilters] = usePersistentTableState<ColumnFiltersState>("offers-filters", []);
-  const [pagination, setPagination] = usePersistentTableState<PaginationState>("offers-pagination", {
-    pageIndex: 0,
-    pageSize: 10,
-  });
-  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
-  
   // Get column definitions
   const columns = getOfferColumns({
     onEdit,
@@ -83,103 +42,22 @@ export function TanStackOffersTable({
     deletingId
   });
 
-  // Initialize table
-  const table = useReactTable({
-    data: offers,
-    columns,
-    state: {
-      sorting,
-      columnFilters,
-      globalFilter,
-      pagination,
-      rowSelection,
-    },
-    enableRowSelection: true,
-    onRowSelectionChange: setRowSelection,
-    onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
-    onGlobalFilterChange: onGlobalFilterChange,
-    onPaginationChange: setPagination,
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getCoreRowModel: getCoreRowModel(),
-    debugTable: process.env.NODE_ENV === "development",
-  });
-
-  // Pass selected rows to parent component when selection changes
-  useEffect(() => {
-    if (onSelectionChange) {
-      const selectedRows = table
-        .getFilteredSelectedRowModel()
-        .rows.map((row) => row.original);
-      
-      onSelectionChange(selectedRows);
-    }
-  }, [rowSelection, table, onSelectionChange]);
-
-  // State handling
-  if (isLoading) {
-    return <TableLoadingState columns={columns} message="Loading study offers..." />;
-  }
-
-  if (isError) {
-    return (
-      <TableErrorState 
-        columns={columns} 
-        message={`Failed to load study offers: ${error instanceof Error ? error.message : 'Unknown error'}`}
-        onRetry={refetch}
-      />
-    );
-  }
-
-  if (offers.length === 0) {
-    return (
-      <TableEmptyState
-        headerGroups={table.getHeaderGroups()}
-        icon={LayoutGrid}
-        title="No study offers found"
-        description="Add your first offer to get started."
-      />
-    );
-  }
-
-  // Render the standard table
   return (
-    <div className="space-y-4">
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id} className={header.column.columnDef.meta?.className}>
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
-                  </TableHead>
-                ))}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows.map((row) => (
-              <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
-                {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id} className={cell.column.columnDef.meta?.className}>
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </TableCell>
-                ))}
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-
-      <TablePagination table={table} itemsName="offers" />
-    </div>
+    <BaseTanStackTable
+      data={data}
+      columns={columns}
+      tableId="offers"
+      itemsName="offers"
+      emptyIcon={LayoutGrid}
+      emptyTitle="No study offers found"
+      emptyDescription="Add your first offer to get started."
+      isLoading={isLoading}
+      isError={isError}
+      error={error}
+      refetch={refetch}
+      globalFilter={globalFilter}
+      onGlobalFilterChange={onGlobalFilterChange}
+      onSelectionChange={onSelectionChange}
+    />
   );
 } 
