@@ -53,33 +53,33 @@ export function getUniversityColumns({
       enableHiding: false,
     },
     columnHelper.accessor("name", {
-      header: ({ column }) => <SortableHeader column={column} title="Name" />,
+      header: ({ column }) => <SortableHeader column={column} title="Name" align="left" />,
       cell: (info) => <span className="font-medium">{info.getValue()}</span>,
     }),
     columnHelper.accessor((row) => row.location.city, {
       id: "city",
-      header: ({ column }) => <SortableHeader column={column} title="City" />,
+      header: ({ column }) => <SortableHeader column={column} title="City" align="left" />,
       cell: (info) => info.getValue(),
     }),
     columnHelper.accessor((row) => row.location.province, {
       id: "province",
-      header: ({ column }) => <SortableHeader column={column} title="Province" />,
+      header: ({ column }) => <SortableHeader column={column} title="Province" align="left" />,
       cell: (info) => info.getValue(),
     }),
     columnHelper.accessor("localRanking", {
-      header: ({ column }) => <SortableHeader column={column} title="Local Ranking" />,
+      header: ({ column }) => <SortableHeader column={column} title="Local Ranking" align="center" />,
       cell: (info) => info.getValue() || "N/A",
     }),
     columnHelper.accessor("worldRanking", {
-      header: ({ column }) => <SortableHeader column={column} title="World Ranking" />,
+      header: ({ column }) => <SortableHeader column={column} title="World Ranking" align="center" />,
       cell: (info) => info.getValue() || "N/A",
     }),
     columnHelper.accessor("active", {
-      header: ({ column }) => <SortableHeader column={column} title="Status" />,
+      header: ({ column }) => <SortableHeader column={column} title="Status" align="center" />,
       cell: (info) => {
         const isActive = info.getValue();
         return onToggleActive ? (
-          <div className="flex items-center">
+          <div className="flex items-center justify-center">
             <Switch
               checked={isActive}
               onCheckedChange={() => 
@@ -89,6 +89,7 @@ export function getUniversityColumns({
             <span className="ml-2">{isActive ? "Active" : "Inactive"}</span>
           </div>
         ) : (
+          <div className="text-center">
           <span
             className={`inline-block px-2 py-1 rounded-full text-xs ${
               isActive ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
@@ -96,16 +97,17 @@ export function getUniversityColumns({
           >
             {isActive ? "Active" : "Inactive"}
           </span>
+          </div>
         );
       },
     }),
     columnHelper.display({
       id: "actions",
-      header: "Actions",
+      header: ({ column }) => <SortableHeader column={column} title="Actions" align="center" />,
       cell: (info) => {
         const university = info.row.original;
         return (
-          <div className="flex items-center justify-end gap-2">
+          <div className="flex items-center justify-center gap-2">
             <Button
               variant="outline"
               size="icon"

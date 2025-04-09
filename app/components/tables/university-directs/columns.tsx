@@ -54,15 +54,15 @@ export function getUniversityDirectColumns({
       enableHiding: false,
     },
     columnHelper.accessor("universityName", {
-      header: ({ column }) => <SortableHeader column={column} title="University" />,
+      header: ({ column }) => <SortableHeader column={column} title="University" align="left" />,
       cell: (info) => <span className="font-medium">{info.getValue()}</span>,
     }),
     columnHelper.accessor("departmentName", {
-      header: ({ column }) => <SortableHeader column={column} title="Department" />,
+      header: ({ column }) => <SortableHeader column={column} title="Department" align="left" />,
       cell: (info) => info.getValue() || "-",
     }),
     columnHelper.accessor("contactPersonName", {
-      header: ({ column }) => <SortableHeader column={column} title="Contact Person" />,
+      header: ({ column }) => <SortableHeader column={column} title="Contact Person" align="left" />,
       cell: (info) => {
         const contactPersonName = info.getValue();
         const universityDirect = info.row.original;
@@ -84,15 +84,15 @@ export function getUniversityDirectColumns({
     }),
     columnHelper.display({
       id: "contactMethods",
-      header: "Contact Methods",
+      header: ({ column }) => <SortableHeader column={column} title="Contact Methods" align="center" />,
       cell: (info) => <ContactMethods universityDirect={info.row.original} />,
     }),
     columnHelper.accessor("active", {
-      header: ({ column }) => <SortableHeader column={column} title="Status" />,
+      header: ({ column }) => <SortableHeader column={column} title="Status" align="center" />,
       cell: (info) => {
         const isActive = info.getValue();
         return onToggleActive ? (
-          <div className="flex items-center">
+          <div className="flex items-center justify-center">
             <Switch
               checked={isActive}
               onCheckedChange={() => 
@@ -102,23 +102,25 @@ export function getUniversityDirectColumns({
             <span className="ml-2">{isActive ? "Active" : "Inactive"}</span>
           </div>
         ) : (
-          <span
-            className={`inline-block px-2 py-1 rounded-full text-xs ${
-              isActive ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
-            }`}
-          >
-            {isActive ? "Active" : "Inactive"}
-          </span>
+          <div className="text-center">
+            <span
+              className={`inline-block px-2 py-1 rounded-full text-xs ${
+                isActive ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+              }`}
+            >
+              {isActive ? "Active" : "Inactive"}
+            </span>
+          </div>
         );
       },
     }),
     columnHelper.display({
       id: "actions",
-      header: "Actions",
+      header: ({ column }) => <SortableHeader column={column} title="Actions" align="center" />,
       cell: (info) => {
         const universityDirect = info.row.original;
         return (
-          <div className="flex items-center justify-end gap-2">
+          <div className="flex items-center justify-center gap-2">
             <Button
               variant="outline"
               size="icon"
