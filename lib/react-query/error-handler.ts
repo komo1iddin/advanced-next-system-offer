@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { toast } from '@/components/ui/use-toast';
+import { toast } from '@/hooks/use-toast';
 import { ApiError } from './types';
 
 /**

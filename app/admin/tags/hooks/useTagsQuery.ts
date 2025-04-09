@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Tag, fetchTags, addTag, updateTag, deleteTag } from '../lib/tag-service';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { processTagsForTable, TagRow } from '../lib/utils';
 
 // Query keys

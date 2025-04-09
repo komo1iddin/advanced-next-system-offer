@@ -17,7 +17,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
 import { Toaster } from "@/components/ui/toaster";
 import { useUniversityDirectQuery } from "../../hooks/useUniversityDirectQuery";
 

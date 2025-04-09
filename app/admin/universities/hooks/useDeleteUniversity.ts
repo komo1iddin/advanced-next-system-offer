@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
 
 async function deleteUniversity(id: string): Promise<void> {
   const response = await fetch(`/api/admin/universities/${id}`, {

@@ -1,5 +1,5 @@
 import { QueryClient, DefaultOptions, QueryCache, MutationCache } from '@tanstack/react-query';
-import { toast } from '@/components/ui/use-toast';
+import { toast } from '@/hooks/use-toast';
 
 // Default error handler that will show toast notifications for query errors
 const defaultErrorHandler = (error: unknown) => {

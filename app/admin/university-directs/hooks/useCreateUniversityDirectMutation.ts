@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
 import { universityDirectKeys, UniversityDirect } from "./useUniversityDirectsQuery";
 
 interface CreateUniversityDirectInput {

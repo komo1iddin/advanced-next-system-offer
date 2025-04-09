@@ -6,7 +6,7 @@ import { ArrowLeft, Edit, Trash2, Tag, Calendar, Clock, School, Globe, BookOpen,
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { toast } from "@/components/ui/use-toast"
+import { toast } from "@/hooks/use-toast"
 import { Toaster } from "@/components/ui/toaster"
 import {
   AlertDialog,

@@ -16,7 +16,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
 import { useCreateUniversityDirectMutation } from "@/app/admin/university-directs/hooks/useCreateUniversityDirectMutation";
 import { AddUniversityDirectModalComponent } from "./types";
 

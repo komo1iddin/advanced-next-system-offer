@@ -7,7 +7,7 @@ import {
   QueryKey,
   QueryFunction,
 } from '@tanstack/react-query';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { ApiError, EnhancedQueryOptions, EnhancedMutationOptions, QueryResult } from './types';
 
 /**
