@@ -1,53 +1,41 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { toast } from "sonner";
+import { Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Save } from "lucide-react";
-import { toast } from "@/components/ui/use-toast";
-import { Toaster } from "@/components/ui/toaster";
-import { AdminPageLayout } from "@/components/ui/admin/page-layout";
+import { useUpdateSettings } from "./hooks/useUpdateSettings";
+import { useSettingsQuery, GeneralSettings, SocialMediaSettings, SEOSettings, Settings } from "./hooks/useSettingsQuery";
 
-interface GeneralSettings {
-  siteName: string;
-  siteDescription: string;
-  contactEmail: string;
-  supportEmail: string;
-  phoneNumber: string;
-  address: string;
-  maintenanceMode: boolean;
-}
+// Removed AdminPageLayout import
 
-interface SocialMediaSettings {
-  facebook: string;
-  twitter: string;
-  instagram: string;
-  linkedin: string;
-  youtube: string;
-}
-
-interface SEOSettings {
-  metaTitle: string;
-  metaDescription: string;
-  keywords: string;
-  googleAnalyticsId: string;
-}
+// Define interfaces for settings
+// Using the interfaces from the hook instead
 
 export default function SettingsPage() {
-  const router = useRouter();
-  const [isSaving, setIsSaving] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const { data: session } = useSession();
+  
+  // Use our React Query hooks
+  const { data: settings, isLoading, isError, error, refetch } = useSettingsQuery();
+  const { mutate: updateSettings, isPending: isUpdating } = useUpdateSettings();
 
-  // General Settings State
+  // State for form data
   const [generalSettings, setGeneralSettings] = useState<GeneralSettings>({
-    siteName: "StudyBridge",
-    siteDescription: "Your bridge to international education",
+    siteName: "",
+    siteDescription: "",
     contactEmail: "",
     supportEmail: "",
     phoneNumber: "",
@@ -55,7 +43,6 @@ export default function SettingsPage() {
     maintenanceMode: false,
   });
 
-  // Social Media Settings State
   const [socialMediaSettings, setSocialMediaSettings] = useState<SocialMediaSettings>({
     facebook: "",
     twitter: "",
@@ -64,387 +51,407 @@ export default function SettingsPage() {
     youtube: "",
   });
 
-  // SEO Settings State
-  const [seoSettings, setSEOSettings] = useState<SEOSettings>({
+  const [seoSettings, setSeoSettings] = useState<SEOSettings>({
     metaTitle: "",
     metaDescription: "",
     keywords: "",
     googleAnalyticsId: "",
   });
 
+  // Load settings from API when component mounts
   useEffect(() => {
-    const fetchSettings = async () => {
-      try {
-        const response = await fetch("/api/admin/settings");
-        if (!response.ok) {
-          throw new Error("Failed to fetch settings");
-        }
-        const data = await response.json();
-        
-        // Update General Settings
-        setGeneralSettings({
-          siteName: data.siteName || "StudyBridge",
-          siteDescription: data.siteDescription || "Your bridge to international education",
-          contactEmail: data.contactEmail || "",
-          supportEmail: data.supportEmail || "",
-          phoneNumber: data.phoneNumber || "",
-          address: data.address || "",
-          maintenanceMode: data.maintenanceMode || false,
-        });
-
-        // Update Social Media Settings
-        setSocialMediaSettings({
-          facebook: data.facebook || "",
-          twitter: data.twitter || "",
-          instagram: data.instagram || "",
-          linkedin: data.linkedin || "",
-          youtube: data.youtube || "",
-        });
-
-        // Update SEO Settings
-        setSEOSettings({
-          metaTitle: data.metaTitle || "",
-          metaDescription: data.metaDescription || "",
-          keywords: data.keywords || "",
-          googleAnalyticsId: data.googleAnalyticsId || "",
-        });
-      } catch (error) {
-        console.error("Error fetching settings:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load settings",
-          variant: "destructive",
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchSettings();
-  }, []);
-
-  const handleGeneralSettingsChange = (
-    key: keyof GeneralSettings,
-    value: string | boolean
-  ) => {
-    setGeneralSettings((prev) => ({
-      ...prev,
-      [key]: value,
-    }));
-  };
-
-  const handleSocialMediaSettingsChange = (
-    key: keyof SocialMediaSettings,
-    value: string
-  ) => {
-    setSocialMediaSettings((prev) => ({
-      ...prev,
-      [key]: value,
-    }));
-  };
-
-  const handleSEOSettingsChange = (
-    key: keyof SEOSettings,
-    value: string
-  ) => {
-    setSEOSettings((prev) => ({
-      ...prev,
-      [key]: value,
-    }));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSaving(true);
-
-    try {
-      const response = await fetch("/api/admin/settings", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          generalSettings,
-          socialMediaSettings,
-          seoSettings,
-        }),
+    if (settings) {
+      setGeneralSettings({
+        siteName: settings.generalSettings?.siteName || "",
+        siteDescription: settings.generalSettings?.siteDescription || "",
+        contactEmail: settings.generalSettings?.contactEmail || "",
+        supportEmail: settings.generalSettings?.supportEmail || "",
+        phoneNumber: settings.generalSettings?.phoneNumber || "",
+        address: settings.generalSettings?.address || "",
+        maintenanceMode: settings.generalSettings?.maintenanceMode ?? false,
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to save settings");
-      }
+      setSocialMediaSettings({
+        facebook: settings.socialMediaSettings?.facebook || "",
+        twitter: settings.socialMediaSettings?.twitter || "",
+        instagram: settings.socialMediaSettings?.instagram || "",
+        linkedin: settings.socialMediaSettings?.linkedin || "",
+        youtube: settings.socialMediaSettings?.youtube || "",
+      });
 
-      toast({
-        title: "Success",
-        description: "Settings have been saved successfully",
+      setSeoSettings({
+        metaTitle: settings.seoSettings?.metaTitle || "",
+        metaDescription: settings.seoSettings?.metaDescription || "",
+        keywords: settings.seoSettings?.keywords || "",
+        googleAnalyticsId: settings.seoSettings?.googleAnalyticsId || "",
       });
-    } catch (error) {
-      console.error("Error saving settings:", error);
-      toast({
-        title: "Error",
-        description: "Failed to save settings",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSaving(false);
     }
+  }, [settings]);
+
+  // Handle changes in settings fields
+  const handleGeneralChange = (field: keyof GeneralSettings, value: any) => {
+    setGeneralSettings({ ...generalSettings, [field]: value });
   };
 
-  // Breadcrumbs for the page
-  const breadcrumbs = [
-    { title: "Settings", href: "/admin/settings" }
-  ];
+  const handleSocialMediaChange = (field: keyof SocialMediaSettings, value: string) => {
+    setSocialMediaSettings({ ...socialMediaSettings, [field]: value });
+  };
 
-  // Save button for the header
+  const handleSEOChange = (field: keyof SEOSettings, value: string) => {
+    setSeoSettings({ ...seoSettings, [field]: value });
+  };
+
+  // Submit function to save settings
+  const handleSubmit = async () => {
+    updateSettings({
+      generalSettings,
+      socialMediaSettings,
+      seoSettings
+    });
+  };
+
+  // Create an action button
   const actionButton = (
-    <Button type="submit" form="settings-form" disabled={isSaving} className="w-full sm:w-auto">
-      <Save className="mr-2 h-4 w-4" />
-      {isSaving ? "Saving..." : "Save Settings"}
+    <Button onClick={handleSubmit} disabled={isUpdating}>
+      {isUpdating ? (
+        <>
+          <svg className="mr-2 h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          Saving...
+        </>
+      ) : (
+        <>
+          <Save className="mr-2 h-4 w-4" />
+          Save Settings
+        </>
+      )}
     </Button>
   );
 
   if (isLoading) {
     return (
-      <AdminPageLayout
-        title="Settings"
-        description="Manage your application settings and preferences"
-        breadcrumbs={breadcrumbs}
-      >
-        <div className="flex items-center justify-center h-[60vh]">
-          <p className="text-muted-foreground">Loading settings...</p>
+      <div className="container max-w-7xl mx-auto p-6 space-y-6">
+        <div className="mb-6 flex flex-col space-y-4">
+          <div>
+            <Link href="/admin" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground w-fit mb-1">
+              <ArrowLeft className="mr-1 h-4 w-4" />
+              Back to Dashboard
+            </Link>
+          </div>
+          
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
+            <div className="flex flex-col space-y-1">
+              <h1 className="text-2xl font-bold">Settings</h1>
+              <p className="text-muted-foreground text-sm">Manage site settings and configuration</p>
+            </div>
+            <div className="sm:ml-auto">{actionButton}</div>
+          </div>
         </div>
-      </AdminPageLayout>
+        <Card>
+          <CardHeader>
+            <CardTitle>Loading...</CardTitle>
+            <CardDescription>Please wait while we load your settings</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-24 flex items-center justify-center">
+              <svg className="h-8 w-8 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="container max-w-7xl mx-auto p-6 space-y-6">
+        <div className="mb-6 flex flex-col space-y-4">
+          <div>
+            <Link href="/admin" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground w-fit mb-1">
+              <ArrowLeft className="mr-1 h-4 w-4" />
+              Back to Dashboard
+            </Link>
+          </div>
+          
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
+            <div className="flex flex-col space-y-1">
+              <h1 className="text-2xl font-bold">Settings</h1>
+              <p className="text-muted-foreground text-sm">Manage site settings and configuration</p>
+            </div>
+          </div>
+        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>Error Loading Settings</CardTitle>
+            <CardDescription>There was a problem loading your settings</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="text-red-500">{error?.message || "An unknown error occurred"}</div>
+            <Button className="mt-4" onClick={() => refetch()}>Try Again</Button>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
   return (
-    <AdminPageLayout
-      title="Settings"
-      description="Manage your application settings and preferences"
-      actionButton={actionButton}
-      breadcrumbs={breadcrumbs}
-    >
-      <div className="p-6">
-        <form id="settings-form" onSubmit={handleSubmit}>
+    <div className="container max-w-7xl mx-auto p-6 space-y-6">
+      <div className="mb-6 flex flex-col space-y-4">
+        <div>
+          <Link href="/admin" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground w-fit mb-1">
+            <ArrowLeft className="mr-1 h-4 w-4" />
+            Back to Dashboard
+          </Link>
+        </div>
+        
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
+          <div className="flex flex-col space-y-1">
+            <h1 className="text-2xl font-bold">Settings</h1>
+            <p className="text-muted-foreground text-sm">Manage site settings and configuration</p>
+          </div>
+          <div className="sm:ml-auto">{actionButton}</div>
+        </div>
+      </div>
+
+      <Card className="shadow-sm">
+        <CardContent className="p-6">
           <Tabs defaultValue="general" className="space-y-4">
             <TabsList>
               <TabsTrigger value="general">General</TabsTrigger>
               <TabsTrigger value="social">Social Media</TabsTrigger>
               <TabsTrigger value="seo">SEO</TabsTrigger>
             </TabsList>
-
-            <TabsContent value="general">
-              <Card>
-                <CardHeader>
-                  <CardTitle>General Settings</CardTitle>
-                  <CardDescription>
-                    Configure basic information about your application
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="siteName">Site Name</Label>
-                      <Input
-                        id="siteName"
-                        value={generalSettings.siteName}
-                        onChange={(e) => handleGeneralSettingsChange("siteName", e.target.value)}
-                        placeholder="Enter site name"
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="phoneNumber">Phone Number</Label>
-                      <Input
-                        id="phoneNumber"
-                        value={generalSettings.phoneNumber}
-                        onChange={(e) => handleGeneralSettingsChange("phoneNumber", e.target.value)}
-                        placeholder="Enter phone number"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="siteDescription">Site Description</Label>
-                    <Textarea
-                      id="siteDescription"
-                      value={generalSettings.siteDescription}
-                      onChange={(e) => handleGeneralSettingsChange("siteDescription", e.target.value)}
-                      placeholder="Enter site description"
-                      rows={3}
+            
+            {/* General Settings Tab */}
+            <TabsContent value="general" className="space-y-4">
+              <div>
+                <h3 className="text-lg font-medium">Basic Information</h3>
+                <p className="text-sm text-muted-foreground">Set the basic information about your site</p>
+              </div>
+              
+              <div className="grid gap-4 py-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="siteName">Site Name</Label>
+                  <Input
+                    id="siteName"
+                    placeholder="My Amazing Site"
+                    value={generalSettings.siteName}
+                    onChange={(e) => handleGeneralChange("siteName", e.target.value)}
+                  />
+                </div>
+                
+                <div className="grid gap-2">
+                  <Label htmlFor="siteDescription">Site Description</Label>
+                  <Textarea
+                    id="siteDescription"
+                    placeholder="A brief description of your site"
+                    className="min-h-[100px]"
+                    value={generalSettings.siteDescription}
+                    onChange={(e) => handleGeneralChange("siteDescription", e.target.value)}
+                  />
+                </div>
+              </div>
+              
+              <Separator />
+              
+              <div>
+                <h3 className="text-lg font-medium">Contact Information</h3>
+                <p className="text-sm text-muted-foreground">Contact details displayed throughout your site</p>
+              </div>
+              
+              <div className="grid gap-4 py-4">
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="contactEmail">Contact Email</Label>
+                    <Input
+                      id="contactEmail"
+                      type="email"
+                      placeholder="contact@example.com"
+                      value={generalSettings.contactEmail}
+                      onChange={(e) => handleGeneralChange("contactEmail", e.target.value)}
                     />
                   </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="contactEmail">Contact Email</Label>
-                      <Input
-                        id="contactEmail"
-                        type="email"
-                        value={generalSettings.contactEmail}
-                        onChange={(e) => handleGeneralSettingsChange("contactEmail", e.target.value)}
-                        placeholder="contact@example.com"
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="supportEmail">Support Email</Label>
-                      <Input
-                        id="supportEmail"
-                        type="email"
-                        value={generalSettings.supportEmail}
-                        onChange={(e) => handleGeneralSettingsChange("supportEmail", e.target.value)}
-                        placeholder="support@example.com"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="address">Address</Label>
-                    <Textarea
-                      id="address"
-                      value={generalSettings.address}
-                      onChange={(e) => handleGeneralSettingsChange("address", e.target.value)}
-                      placeholder="Enter physical address"
-                      rows={3}
+                  
+                  <div className="grid gap-2">
+                    <Label htmlFor="supportEmail">Support Email</Label>
+                    <Input
+                      id="supportEmail"
+                      type="email"
+                      placeholder="support@example.com"
+                      value={generalSettings.supportEmail}
+                      onChange={(e) => handleGeneralChange("supportEmail", e.target.value)}
                     />
                   </div>
-
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      id="maintenanceMode"
-                      checked={generalSettings.maintenanceMode}
-                      onCheckedChange={(checked) => handleGeneralSettingsChange("maintenanceMode", checked)}
-                    />
+                </div>
+                
+                <div className="grid gap-2">
+                  <Label htmlFor="address">Address</Label>
+                  <Textarea
+                    id="address"
+                    placeholder="Physical address"
+                    value={generalSettings.address}
+                    onChange={(e) => handleGeneralChange("address", e.target.value)}
+                  />
+                </div>
+                
+                <div className="grid gap-2">
+                  <Label htmlFor="phoneNumber">Phone</Label>
+                  <Input
+                    id="phoneNumber"
+                    placeholder="+1 (555) 123-4567"
+                    value={generalSettings.phoneNumber}
+                    onChange={(e) => handleGeneralChange("phoneNumber", e.target.value)}
+                  />
+                </div>
+              </div>
+              
+              <Separator />
+              
+              <div>
+                <h3 className="text-lg font-medium">Site Features</h3>
+                <p className="text-sm text-muted-foreground">Toggle site features and functionality</p>
+              </div>
+              
+              <div className="grid gap-4 py-4">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
                     <Label htmlFor="maintenanceMode">Maintenance Mode</Label>
+                    <p className="text-sm text-muted-foreground">Put your site in maintenance mode</p>
                   </div>
-                </CardContent>
-              </Card>
+                  <Switch
+                    id="maintenanceMode"
+                    checked={generalSettings.maintenanceMode}
+                    onCheckedChange={(checked) => handleGeneralChange("maintenanceMode", checked)}
+                  />
+                </div>
+              </div>
             </TabsContent>
-
-            <TabsContent value="social">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Social Media Links</CardTitle>
-                  <CardDescription>
-                    Set your social media profiles for sharing and connecting
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="facebook">Facebook</Label>
-                      <Input
-                        id="facebook"
-                        value={socialMediaSettings.facebook}
-                        onChange={(e) => handleSocialMediaSettingsChange("facebook", e.target.value)}
-                        placeholder="https://facebook.com/yourpage"
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="twitter">Twitter</Label>
-                      <Input
-                        id="twitter"
-                        value={socialMediaSettings.twitter}
-                        onChange={(e) => handleSocialMediaSettingsChange("twitter", e.target.value)}
-                        placeholder="https://twitter.com/yourhandle"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="instagram">Instagram</Label>
-                      <Input
-                        id="instagram"
-                        value={socialMediaSettings.instagram}
-                        onChange={(e) => handleSocialMediaSettingsChange("instagram", e.target.value)}
-                        placeholder="https://instagram.com/yourprofile"
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="linkedin">LinkedIn</Label>
-                      <Input
-                        id="linkedin"
-                        value={socialMediaSettings.linkedin}
-                        onChange={(e) => handleSocialMediaSettingsChange("linkedin", e.target.value)}
-                        placeholder="https://linkedin.com/company/yourcompany"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="youtube">YouTube</Label>
+            
+            {/* Social Media Tab */}
+            <TabsContent value="social" className="space-y-4">
+              <div>
+                <h3 className="text-lg font-medium">Social Media Links</h3>
+                <p className="text-sm text-muted-foreground">Add links to your social media profiles</p>
+              </div>
+              
+              <div className="grid gap-4 py-4">
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="facebook">Facebook</Label>
                     <Input
-                      id="youtube"
-                      value={socialMediaSettings.youtube}
-                      onChange={(e) => handleSocialMediaSettingsChange("youtube", e.target.value)}
-                      placeholder="https://youtube.com/c/yourchannel"
+                      id="facebook"
+                      placeholder="https://facebook.com/yourpage"
+                      value={socialMediaSettings.facebook}
+                      onChange={(e) => handleSocialMediaChange("facebook", e.target.value)}
                     />
                   </div>
-                </CardContent>
-              </Card>
+                  
+                  <div className="grid gap-2">
+                    <Label htmlFor="twitter">Twitter</Label>
+                    <Input
+                      id="twitter"
+                      placeholder="https://twitter.com/yourhandle"
+                      value={socialMediaSettings.twitter}
+                      onChange={(e) => handleSocialMediaChange("twitter", e.target.value)}
+                    />
+                  </div>
+                </div>
+                
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="instagram">Instagram</Label>
+                    <Input
+                      id="instagram"
+                      placeholder="https://instagram.com/yourprofile"
+                      value={socialMediaSettings.instagram}
+                      onChange={(e) => handleSocialMediaChange("instagram", e.target.value)}
+                    />
+                  </div>
+                  
+                  <div className="grid gap-2">
+                    <Label htmlFor="linkedin">LinkedIn</Label>
+                    <Input
+                      id="linkedin"
+                      placeholder="https://linkedin.com/company/yourcompany"
+                      value={socialMediaSettings.linkedin}
+                      onChange={(e) => handleSocialMediaChange("linkedin", e.target.value)}
+                    />
+                  </div>
+                </div>
+                
+                <div className="grid gap-2">
+                  <Label htmlFor="youtube">YouTube</Label>
+                  <Input
+                    id="youtube"
+                    placeholder="https://youtube.com/c/yourchannel"
+                    value={socialMediaSettings.youtube}
+                    onChange={(e) => handleSocialMediaChange("youtube", e.target.value)}
+                  />
+                </div>
+              </div>
             </TabsContent>
-
-            <TabsContent value="seo">
-              <Card>
-                <CardHeader>
-                  <CardTitle>SEO Settings</CardTitle>
-                  <CardDescription>
-                    Optimize your site for search engines
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="metaTitle">Meta Title</Label>
-                    <Input
-                      id="metaTitle"
-                      value={seoSettings.metaTitle}
-                      onChange={(e) => handleSEOSettingsChange("metaTitle", e.target.value)}
-                      placeholder="Enter meta title"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="metaDescription">Meta Description</Label>
-                    <Textarea
-                      id="metaDescription"
-                      value={seoSettings.metaDescription}
-                      onChange={(e) => handleSEOSettingsChange("metaDescription", e.target.value)}
-                      placeholder="Enter meta description"
-                      rows={3}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="keywords">Keywords</Label>
-                    <Textarea
-                      id="keywords"
-                      value={seoSettings.keywords}
-                      onChange={(e) => handleSEOSettingsChange("keywords", e.target.value)}
-                      placeholder="Enter keywords separated by commas"
-                      rows={3}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="googleAnalyticsId">Google Analytics ID</Label>
-                    <Input
-                      id="googleAnalyticsId"
-                      value={seoSettings.googleAnalyticsId}
-                      onChange={(e) => handleSEOSettingsChange("googleAnalyticsId", e.target.value)}
-                      placeholder="e.g. UA-XXXXXXXXX-X or G-XXXXXXXXXX"
-                    />
-                  </div>
-                </CardContent>
-              </Card>
+            
+            {/* SEO Tab */}
+            <TabsContent value="seo" className="space-y-4">
+              <div>
+                <h3 className="text-lg font-medium">SEO Settings</h3>
+                <p className="text-sm text-muted-foreground">Optimize your site for search engines</p>
+              </div>
+              
+              <div className="grid gap-4 py-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="metaTitle">Meta Title</Label>
+                  <Input
+                    id="metaTitle"
+                    placeholder="Default page title"
+                    value={seoSettings.metaTitle}
+                    onChange={(e) => handleSEOChange("metaTitle", e.target.value)}
+                  />
+                  <p className="text-sm text-muted-foreground">The default title for pages without a specific title</p>
+                </div>
+                
+                <div className="grid gap-2">
+                  <Label htmlFor="metaDescription">Meta Description</Label>
+                  <Textarea
+                    id="metaDescription"
+                    placeholder="Default page description"
+                    value={seoSettings.metaDescription}
+                    onChange={(e) => handleSEOChange("metaDescription", e.target.value)}
+                  />
+                  <p className="text-sm text-muted-foreground">The default description for pages without a specific description</p>
+                </div>
+                
+                <div className="grid gap-2">
+                  <Label htmlFor="keywords">Meta Keywords</Label>
+                  <Input
+                    id="keywords"
+                    placeholder="keyword1, keyword2, keyword3"
+                    value={seoSettings.keywords}
+                    onChange={(e) => handleSEOChange("keywords", e.target.value)}
+                  />
+                  <p className="text-sm text-muted-foreground">Comma-separated keywords for search engines</p>
+                </div>
+                
+                <div className="grid gap-2">
+                  <Label htmlFor="googleAnalyticsId">Google Analytics ID</Label>
+                  <Input
+                    id="googleAnalyticsId"
+                    placeholder="UA-XXXXXXXX-X or G-XXXXXXXXXX"
+                    value={seoSettings.googleAnalyticsId}
+                    onChange={(e) => handleSEOChange("googleAnalyticsId", e.target.value)}
+                  />
+                  <p className="text-sm text-muted-foreground">Your Google Analytics tracking ID</p>
+                </div>
+              </div>
             </TabsContent>
           </Tabs>
-        </form>
-      </div>
-      <Toaster />
-    </AdminPageLayout>
+        </CardContent>
+      </Card>
+    </div>
   );
 } 
