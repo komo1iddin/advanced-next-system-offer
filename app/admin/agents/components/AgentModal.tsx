@@ -20,13 +20,15 @@ interface AgentModalProps {
   dialogControl: DialogControl<Agent>;
   onSubmit: (data: any) => void;
   children?: ReactNode;
+  triggerless?: boolean;
 }
 
 export function AgentModal({ 
   mode,
   dialogControl,
   onSubmit,
-  children
+  children,
+  triggerless = false
 }: AgentModalProps) {
   const { isOpen, setOpen, isSubmitting, selected } = dialogControl;
   
@@ -37,6 +39,9 @@ export function AgentModal({
       Add Agent
     </Button>
   ) : null;
+
+  // For triggerless modals, use empty div that won't render a button
+  const trigger = triggerless ? <div style={{ display: 'none' }} /> : (children || defaultTrigger);
 
   return (
     <FormModal
@@ -53,7 +58,7 @@ export function AgentModal({
       className="max-h-[90vh] overflow-y-auto"
       autoCloseOnSuccess={true}
     >
-      {children || defaultTrigger}
+      {trigger}
     </FormModal>
   );
 }

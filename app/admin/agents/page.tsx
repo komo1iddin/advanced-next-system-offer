@@ -130,11 +130,12 @@ export default function AgentsPage() {
         />
       </AdminPageLayout>
       
-      {/* Agent dialog component - Keep only the modal itself without children prop which triggers the redundant button */}
+      {/* Agent dialog component - without any trigger button */}
       <AgentModal 
         mode="create" 
         dialogControl={addDialogControl}
         onSubmit={handleAddAgent}
+        triggerless={true}
       />
       
       <Toaster />
