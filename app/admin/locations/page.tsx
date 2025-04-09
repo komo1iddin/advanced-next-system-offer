@@ -260,83 +260,82 @@ export default function LocationsPage() {
   };
 
   // Create action buttons for the header (two buttons: Add Province and Add City)
-  const actionButtons = (
+  const actionButton = (
     <div className="flex flex-col sm:flex-row gap-2">
-      <Button onClick={() => setIsAddProvinceDialogOpen(true)} variant="default">
+      <Button onClick={() => setIsAddProvinceDialogOpen(true)} variant="default" className="w-full sm:w-auto">
         <PlusCircle className="mr-2 h-4 w-4" />
         Add Province
       </Button>
-      <Button onClick={() => setIsAddCityDialogOpen(true)} variant="default">
+      <Button onClick={() => setIsAddCityDialogOpen(true)} variant="default" className="w-full sm:w-auto">
         <PlusCircle className="mr-2 h-4 w-4" />
         Add City
       </Button>
     </div>
   );
 
+  // Breadcrumbs for this page
+  const breadcrumbs = [
+    { title: "Locations", href: "/admin/locations" }
+  ];
+
+  // Bulk actions UI
+  const bulkActionsUI = selectedRows.length > 0 ? (
+    <div className="flex items-center justify-between w-full">
+      <p className="text-sm font-medium">
+        {selectedRows.length} {selectedRows.length === 1 ? 'location' : 'locations'} selected
+        {selectedRows.filter(r => r.type === 'province').length > 0 && (
+          <span className="ml-1">
+            ({selectedRows.filter(r => r.type === 'province').length} provinces,{' '}
+            {selectedRows.filter(r => r.type === 'city').length} cities)
+          </span>
+        )}
+      </p>
+      <div className="flex gap-2">
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={() => handleBulkStatusChange(true)}
+        >
+          Activate
+        </Button>
+        <Button 
+          variant="outline" 
+          size="sm"
+          onClick={() => handleBulkStatusChange(false)}
+        >
+          Deactivate
+        </Button>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={() => setSelectedRows([])}
+        >
+          Clear Selection
+        </Button>
+        <Button 
+          variant="destructive" 
+          size="sm"
+          onClick={handleBulkDelete}
+        >
+          Delete Selected
+        </Button>
+      </div>
+    </div>
+  ) : null;
+
   return (
-    <div className="locations-page">
-      <style jsx>{`
-        /* Override any potential styling for bottom buttons */
-        .locations-page + div,
-        .locations-page + div[class*="fixed"],
-        .locations-page + button,
-        .locations-page ~ div[class*="fixed"] {
-          display: none !important;
-        }
-      `}</style>
+    <>
       <AdminPageLayout
         title="Locations"
         description="Manage provinces/states and cities in your application"
-        actionButton={actionButtons}
+        actionButton={actionButton}
         searchTerm={searchTerm}
         onSearchChange={setSearchTerm}
         itemCount={filteredLocations.length}
         itemName="location"
+        bulkActions={bulkActionsUI}
+        breadcrumbs={breadcrumbs}
       >
-        {selectedRows.length > 0 && (
-          <div className="mb-4 p-4 bg-muted rounded-md flex items-center justify-between">
-            <p className="text-sm font-medium">
-              {selectedRows.length} {selectedRows.length === 1 ? 'location' : 'locations'} selected
-              {selectedRows.filter(r => r.type === 'province').length > 0 && (
-                <span className="ml-1">
-                  ({selectedRows.filter(r => r.type === 'province').length} provinces,{' '}
-                  {selectedRows.filter(r => r.type === 'city').length} cities)
-                </span>
-              )}
-            </p>
-            <div className="flex gap-2">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => handleBulkStatusChange(true)}
-              >
-                Activate
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => handleBulkStatusChange(false)}
-              >
-                Deactivate
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => setSelectedRows([])}
-              >
-                Clear Selection
-              </Button>
-              <Button 
-                variant="destructive" 
-                size="sm"
-                onClick={handleBulkDelete}
-              >
-                Delete Selected
-              </Button>
-            </div>
-          </div>
-        )}
-
         <TanStackLocationsTable
           data={filteredLocations}
           isLoading={isLoading}
@@ -367,6 +366,6 @@ export default function LocationsPage() {
       />
       
       <Toaster />
-    </div>
+    </>
   );
 } 

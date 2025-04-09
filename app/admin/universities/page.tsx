@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { PlusCircle } from "lucide-react";
 import { UniversityModal } from "../../components/modals/UniversityModal";
 import { useUniversitiesQuery } from "./hooks/useUniversitiesQuery";
 import { useDeleteUniversity } from "./hooks/useDeleteUniversity";
@@ -99,15 +99,77 @@ export default function UniversitiesPage() {
     }
   };
 
+  // Handle bulk status change
+  const handleBulkStatusChange = async (active: boolean) => {
+    if (selectedRows.length === 0) return;
+    
+    const statusText = active ? 'activate' : 'deactivate';
+    const confirmed = window.confirm(`Are you sure you want to ${statusText} ${selectedRows.length} selected ${selectedRows.length > 1 ? 'universities' : 'university'}?`);
+    
+    if (confirmed) {
+      // Process status change for each selected row
+      for (const row of selectedRows) {
+        toggleUniversityActive.mutate({ id: row.id, active });
+      }
+      
+      // Clear selection after update
+      setSelectedRows([]);
+    }
+  };
+
   // Add button to be displayed in the header
-  const addButton = (
+  const actionButton = (
     <UniversityModal mode="add">
-      <Button>
-        <Plus className="w-4 h-4 mr-2" />
+      <Button variant="default" className="w-full sm:w-auto">
+        <PlusCircle className="w-4 h-4 mr-2" />
         Add University
       </Button>
     </UniversityModal>
   );
+
+  // Breadcrumbs for this page
+  const breadcrumbs = [
+    { title: "Universities", href: "/admin/universities" }
+  ];
+
+  // Bulk actions UI
+  const bulkActionsUI = selectedRows.length > 0 ? (
+    <div className="flex items-center justify-between w-full">
+      <p className="text-sm font-medium">
+        {selectedRows.length} {selectedRows.length === 1 ? 'university' : 'universities'} selected
+      </p>
+      <div className="flex gap-2">
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={() => handleBulkStatusChange(true)}
+        >
+          Activate
+        </Button>
+        <Button 
+          variant="outline" 
+          size="sm"
+          onClick={() => handleBulkStatusChange(false)}
+        >
+          Deactivate
+        </Button>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={() => setSelectedRows([])}
+        >
+          Clear Selection
+        </Button>
+        <Button 
+          variant="destructive" 
+          size="sm"
+          onClick={handleBulkDelete}
+        >
+          Delete Selected
+        </Button>
+      </div>
+    </div>
+  ) : null;
 
   // Add a debug message if we have issues
   const debugMessage = process.env.NODE_ENV === "development" && isError ? (
@@ -131,38 +193,15 @@ export default function UniversitiesPage() {
       <AdminPageLayout
         title="Universities"
         description="Manage university listings and their rankings"
-        actionButton={addButton}
-        cardTitle="All Universities"
+        actionButton={actionButton}
         searchTerm={searchQuery}
         onSearchChange={setSearchQuery}
         itemCount={filteredUniversities.length}
         itemName="university"
+        bulkActions={bulkActionsUI}
+        breadcrumbs={breadcrumbs}
       >
         {debugMessage}
-
-        {selectedRows.length > 0 && (
-          <div className="mb-4 p-4 bg-muted rounded-md flex items-center justify-between">
-            <p className="text-sm font-medium">
-              {selectedRows.length} {selectedRows.length === 1 ? 'university' : 'universities'} selected
-            </p>
-            <div className="flex gap-2">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => setSelectedRows([])}
-              >
-                Clear Selection
-              </Button>
-              <Button 
-                variant="destructive" 
-                size="sm"
-                onClick={handleBulkDelete}
-              >
-                Delete Selected
-              </Button>
-            </div>
-          </div>
-        )}
 
         <TanStackUniversitiesTable
           data={filteredUniversities}

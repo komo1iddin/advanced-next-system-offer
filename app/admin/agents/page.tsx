@@ -65,6 +65,24 @@ export default function AgentsPage() {
     }
   };
 
+  // Handle bulk status change
+  const handleBulkStatusChange = async (active: boolean) => {
+    if (selectedRows.length === 0) return;
+    
+    const statusText = active ? 'activate' : 'deactivate';
+    const confirmed = window.confirm(`Are you sure you want to ${statusText} ${selectedRows.length} selected ${selectedRows.length > 1 ? 'agents' : 'agent'}?`);
+    
+    if (confirmed) {
+      // Process status change for each selected row
+      for (const row of selectedRows) {
+        await toggleAgentActive(row._id, active);
+      }
+      
+      // Clear selection after update
+      setSelectedRows([]);
+    }
+  };
+
   // Dialog controls for add agent modal
   const addDialogControl = {
     isOpen: isAddAgentDialogOpen,
@@ -80,6 +98,50 @@ export default function AgentsPage() {
     </Button>
   );
 
+  // Bulk actions UI
+  const bulkActionsUI = selectedRows.length > 0 ? (
+    <div className="flex items-center justify-between w-full">
+      <p className="text-sm font-medium">
+        {selectedRows.length} {selectedRows.length === 1 ? 'agent' : 'agents'} selected
+      </p>
+      <div className="flex gap-2">
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={() => handleBulkStatusChange(true)}
+        >
+          Activate
+        </Button>
+        <Button 
+          variant="outline" 
+          size="sm"
+          onClick={() => handleBulkStatusChange(false)}
+        >
+          Deactivate
+        </Button>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={() => setSelectedRows([])}
+        >
+          Clear Selection
+        </Button>
+        <Button 
+          variant="destructive" 
+          size="sm"
+          onClick={handleBulkDelete}
+        >
+          Delete Selected
+        </Button>
+      </div>
+    </div>
+  ) : null;
+
+  // Breadcrumbs for this page
+  const breadcrumbs = [
+    { title: "Agents", href: "/admin/agents" }
+  ];
+
   return (
     <>
       <AdminPageLayout
@@ -90,31 +152,9 @@ export default function AgentsPage() {
         onSearchChange={setSearchQuery}
         itemCount={filteredAgents.length}
         itemName="agent"
+        bulkActions={bulkActionsUI}
+        breadcrumbs={breadcrumbs}
       >
-        {selectedRows.length > 0 && (
-          <div className="mb-4 p-4 bg-muted rounded-md flex items-center justify-between">
-            <p className="text-sm font-medium">
-              {selectedRows.length} {selectedRows.length === 1 ? 'agent' : 'agents'} selected
-            </p>
-            <div className="flex gap-2">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => setSelectedRows([])}
-              >
-                Clear Selection
-              </Button>
-              <Button 
-                variant="destructive" 
-                size="sm"
-                onClick={handleBulkDelete}
-              >
-                Delete Selected
-              </Button>
-            </div>
-          </div>
-        )}
-
         <TanStackAgentsTable
           data={filteredAgents}
           isLoading={isLoading}

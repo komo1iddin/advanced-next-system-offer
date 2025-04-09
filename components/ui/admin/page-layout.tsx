@@ -2,32 +2,81 @@
 
 import React, { ReactNode } from "react";
 import Link from "next/link";
-import { ArrowLeft, Search } from "lucide-react";
+import { ArrowLeft, ChevronRight, Search } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+
+// New Breadcrumb component
+interface BreadcrumbItem {
+  title: string;
+  href: string;
+}
+
+interface BreadcrumbsProps {
+  items: BreadcrumbItem[];
+}
+
+export function Breadcrumbs({ items }: BreadcrumbsProps) {
+  // Always include Dashboard as the first item
+  const allItems = [{ title: "Dashboard", href: "/admin" }, ...items];
+  
+  return (
+    <nav className="flex items-center space-x-1 text-sm text-muted-foreground mb-2">
+      {allItems.map((item, index) => (
+        <React.Fragment key={item.href}>
+          {index > 0 && (
+            <ChevronRight className="h-4 w-4 mx-1 text-muted-foreground/50" />
+          )}
+          <Link 
+            href={item.href} 
+            className={`hover:text-foreground ${index === allItems.length - 1 ? 'font-medium text-foreground' : ''}`}
+          >
+            {item.title}
+          </Link>
+        </React.Fragment>
+      ))}
+    </nav>
+  );
+}
 
 interface AdminPageHeaderProps {
   title: string;
   description?: string;
   actionButton?: ReactNode;
+  breadcrumbs?: BreadcrumbItem[];
 }
 
-export function AdminPageHeader({ title, description, actionButton }: AdminPageHeaderProps) {
+export function AdminPageHeader({ 
+  title, 
+  description, 
+  actionButton,
+  breadcrumbs = []
+}: AdminPageHeaderProps) {
   return (
-    <div className="mb-6 flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
-      <div className="flex flex-col space-y-1">
-        <Link href="/admin" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground w-fit mb-1">
-          <ArrowLeft className="mr-1 h-4 w-4" />
-          Back to Dashboard
-        </Link>
-        <h1 className="text-2xl font-bold">{title}</h1>
-        {description && (
-          <p className="text-muted-foreground text-sm">{description}</p>
+    <div className="mb-6 flex flex-col space-y-4">
+      <div>
+        {/* Breadcrumbs navigation */}
+        {breadcrumbs.length > 0 ? (
+          <Breadcrumbs items={breadcrumbs} />
+        ) : (
+          <Link href="/admin" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground w-fit mb-1">
+            <ArrowLeft className="mr-1 h-4 w-4" />
+            Back to Dashboard
+          </Link>
         )}
       </div>
-      {actionButton && (
-        <div className="sm:ml-auto">{actionButton}</div>
-      )}
+      
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
+        <div className="flex flex-col space-y-1">
+          <h1 className="text-2xl font-bold">{title}</h1>
+          {description && (
+            <p className="text-muted-foreground text-sm">{description}</p>
+          )}
+        </div>
+        {actionButton && (
+          <div className="sm:ml-auto">{actionButton}</div>
+        )}
+      </div>
     </div>
   );
 }
@@ -54,11 +103,11 @@ export function AdminCard({
   bulkActions
 }: AdminCardProps) {
   const itemText = itemCount !== undefined
-    ? `${itemCount} ${itemCount === 1 ? itemName : `${itemName}s`} available`
+    ? `${itemCount} ${itemCount === 1 ? itemName : `${itemName}s`}`
     : description;
 
   return (
-    <Card>
+    <Card className="shadow-sm">
       <CardHeader className="pb-3 flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
         <div>
           <CardTitle>{title}</CardTitle>
@@ -101,6 +150,7 @@ export interface AdminPageLayoutProps {
   itemName?: string;
   children: ReactNode;
   bulkActions?: ReactNode;
+  breadcrumbs?: BreadcrumbItem[];
 }
 
 export function AdminPageLayout({
@@ -113,24 +163,20 @@ export function AdminPageLayout({
   itemCount,
   itemName = "item",
   children,
-  bulkActions
+  bulkActions,
+  breadcrumbs = []
 }: AdminPageLayoutProps) {
   return (
-    <div className="container max-w-7xl mx-auto p-4 space-y-4">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-2 md:space-y-0">
-        <div>
-          <h1 className="text-3xl font-bold">{title}</h1>
-          <p className="text-muted-foreground">{description || ''}</p>
-        </div>
-        {actionButton && (
-          <div className="flex justify-end">
-            {actionButton}
-          </div>
-        )}
-      </div>
+    <div className="container max-w-7xl mx-auto p-6 space-y-6">
+      <AdminPageHeader 
+        title={title}
+        description={description}
+        actionButton={actionButton}
+        breadcrumbs={breadcrumbs}
+      />
 
-      <Card>
-        <CardHeader className="flex flex-col md:flex-row md:items-center space-y-2 md:space-y-0 md:justify-between pb-2 pt-6 px-6">
+      <Card className="shadow-sm overflow-hidden">
+        <CardHeader className="flex flex-col md:flex-row md:items-center space-y-2 md:space-y-0 md:justify-between pb-4 pt-6 px-6">
           <div>
             {cardTitle && <CardTitle>{cardTitle}</CardTitle>}
             {typeof itemCount !== "undefined" && (
@@ -155,7 +201,7 @@ export function AdminPageLayout({
           </div>
         </CardHeader>
         {bulkActions && (
-          <div className="flex flex-wrap items-center gap-2 px-6 py-2 border-t">
+          <div className="flex flex-wrap items-center gap-2 px-6 py-3 border-t border-b">
             {bulkActions}
           </div>
         )}

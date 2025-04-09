@@ -163,62 +163,70 @@ export default function TagsPage() {
   };
   
   // Add button to be displayed in the header
-  const addButton = (
+  const actionButton = (
     <Button onClick={() => setIsAddTagDialogOpen(true)} variant="default" className="w-full sm:w-auto">
       <PlusCircle className="mr-2 h-4 w-4" />
       Add New Tag
     </Button>
   );
 
+  // Breadcrumbs for this page
+  const breadcrumbs = [
+    { title: "Tags", href: "/admin/tags" }
+  ];
+
+  // Bulk actions UI
+  const bulkActionsUI = selectedRows.length > 0 ? (
+    <div className="flex items-center justify-between w-full">
+      <p className="text-sm font-medium">
+        {selectedRows.length} {selectedRows.length === 1 ? 'tag' : 'tags'} selected
+      </p>
+      <div className="flex gap-2">
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={() => handleBulkStatusChange(true)}
+        >
+          Activate
+        </Button>
+        <Button 
+          variant="outline" 
+          size="sm"
+          onClick={() => handleBulkStatusChange(false)}
+        >
+          Deactivate
+        </Button>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={() => setSelectedRows([])}
+        >
+          Clear Selection
+        </Button>
+        <Button 
+          variant="destructive" 
+          size="sm"
+          onClick={handleBulkDelete}
+        >
+          Delete Selected
+        </Button>
+      </div>
+    </div>
+  ) : null;
+
   return (
     <>
       <AdminPageLayout
         title="Tags"
         description="Create and manage tags for categorizing study offers"
-        actionButton={addButton}
+        actionButton={actionButton}
         searchTerm={searchTerm}
         onSearchChange={setSearchTerm}
         itemCount={filteredTags.length}
         itemName="tag"
+        bulkActions={bulkActionsUI}
+        breadcrumbs={breadcrumbs}
       >
-        {selectedRows.length > 0 && (
-          <div className="mb-4 p-4 bg-muted rounded-md flex items-center justify-between">
-            <p className="text-sm font-medium">
-              {selectedRows.length} {selectedRows.length === 1 ? 'tag' : 'tags'} selected
-            </p>
-            <div className="flex gap-2">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => handleBulkStatusChange(true)}
-              >
-                Activate
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => handleBulkStatusChange(false)}
-              >
-                Deactivate
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => setSelectedRows([])}
-              >
-                Clear Selection
-              </Button>
-              <Button 
-                variant="destructive" 
-                size="sm"
-                onClick={handleBulkDelete}
-              >
-                Delete Selected
-              </Button>
-            </div>
-          </div>
-        )}
-
         <TanStackTagsTable
           data={filteredTags}
           isLoading={isLoading}
