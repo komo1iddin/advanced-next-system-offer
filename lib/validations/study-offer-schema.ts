@@ -4,12 +4,12 @@ import { z } from "zod";
 const idSchema = z.string().optional();
 const titleSchema = z.string().min(1, "Title is required").max(500);
 const descriptionSchema = z.string().min(1, "Description is required").max(10000);
-const universityNameSchema = z.string().min(1, "University name is required").max(200).optional();
-const locationSchema = z.string().min(1, "Location is required").max(200).optional();
+const universityNameSchema = z.string().min(1, "University name is required").max(200);
+const locationSchema = z.string().min(1, "Location is required").max(200);
 const durationInYearsSchema = z.union([
   z.number().min(0.1, "Duration must be positive"),
   z.string().transform((val) => parseFloat(val) || 0)
-]).optional();
+]);
 const applicationDeadlineSchema = z
   .union([
     z.date(),
@@ -20,35 +20,34 @@ const applicationDeadlineSchema = z
         return new Date();
       }
     })
-  ])
-  .optional();
-const degreeLevelSchema = z.string().optional();
-const programsSchema = z.array(z.string()).min(1, "At least one program is required").optional();
+  ]);
+const degreeLevelSchema = z.enum(['Bachelor', 'Master', 'PhD', 'Certificate', 'Diploma', 'Language Course']);
+const programsSchema = z.array(z.string()).min(1, "At least one program is required");
 const languageRequirementsSchema = z.array(
   z.object({
-    language: z.string().optional(),
+    language: z.string(),
     minimumScore: z.string().optional(),
     testName: z.string().optional()
   })
-).optional();
-const admissionRequirementsSchema = z.array(z.string()).optional();
+);
+const admissionRequirementsSchema = z.array(z.string()).min(1, "At least one admission requirement is required");
 const campusFacilitiesSchema = z.array(z.string()).optional();
-const tagsSchema = z.array(z.string()).optional();
-const colorSchema = z.string().optional();
-const accentColorSchema = z.string().optional();
-const categorySchema = z.string().optional();
-const sourceSchema = z.string().optional();
+const tagsSchema = z.array(z.string()).min(1, "At least one tag is required");
+const colorSchema = z.string().min(1, "Color is required");
+const accentColorSchema = z.string().min(1, "Accent color is required");
+const categorySchema = z.enum(['University', 'College']);
+const sourceSchema = z.enum(['agent', 'university direct', 'public university offer']).default('university direct');
 const tuitionFeesSchema = z.object({
   amount: z.union([
-    z.number().min(0),
+    z.number().min(0, "Amount must be positive"),
     z.string().transform((val) => parseFloat(val) || 0)
   ]),
-  currency: z.string().optional(),
-  period: z.string().optional()
-}).optional();
-const scholarshipAvailableSchema = z.boolean().optional();
+  currency: z.string().default('USD'),
+  period: z.string().default('Year')
+});
+const scholarshipAvailableSchema = z.boolean().default(false);
 const scholarshipDetailsSchema = z.string().optional();
-const featuredSchema = z.boolean().optional();
+const featuredSchema = z.boolean().default(false);
 const cityIdSchema = z.string().optional();
 const provinceIdSchema = z.string().optional();
 const agentIdSchema = z.string().optional();
@@ -102,7 +101,7 @@ export const createStudyOfferSchema = studyOfferSchema.omit({
   updatedAt: true,
   createdBy: true,
   updatedBy: true,
-}).passthrough(); // Allow additional fields
+});
 
 // Schema for updating an existing study offer
 export const updateStudyOfferSchema = createStudyOfferSchema.partial();
@@ -124,7 +123,19 @@ export const studyOfferFilterSchema = z.object({
   sortOrder: z.enum(["asc", "desc"]).optional(),
   page: z.number().min(1).optional(),
   limit: z.number().min(1).max(100).optional(),
+  uniqueId: z.string().optional(),
 }).passthrough(); // Allow additional fields
+
+// Legacy support for API routes
+export const getStudyOffersSchema = z.object({
+  category: z.string().optional(),
+  degreeLevel: z.string().optional(),
+  search: z.string().optional(),
+  uniqueId: z.string().optional(),
+  featured: z.string().optional().transform(str => str === 'true' ? true : str === 'false' ? false : undefined),
+  limit: z.string().optional().transform(str => str ? parseInt(str, 10) : undefined),
+  page: z.string().optional().transform(str => str ? parseInt(str, 10) : undefined)
+});
 
 // Type inference
 export type StudyOffer = z.infer<typeof studyOfferSchema>;

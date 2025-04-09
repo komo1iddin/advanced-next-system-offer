@@ -3,8 +3,8 @@ import { StudyOfferService } from '@/lib/services/StudyOfferService';
 import { ErrorHandler } from '@/lib/middleware/errorHandler';
 import { ValidateRequest } from '@/lib/middleware/validateRequest';
 import { ResponseFormatter } from '@/lib/middleware/responseFormatter';
-import { createStudyOfferSchema, studyOfferSchema } from '@/lib/validations/studyOfferSchema';
-import { studyOfferQuerySchema } from '@/lib/validations/querySchema';
+import { createStudyOfferSchema, studyOfferSchema } from '@/lib/validations/study-offer-schema';
+import { studyOfferQuerySchema } from '@/lib/validations/query-schema';
 import { requireAuth } from '@/lib/middleware/auth';
 import { rateLimit } from '@/lib/middleware/rateLimit';
 
