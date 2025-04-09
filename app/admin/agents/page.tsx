@@ -130,14 +130,12 @@ export default function AgentsPage() {
         />
       </AdminPageLayout>
       
-      {/* Agent dialog component - using null for children to prevent duplicate button */}
+      {/* Agent dialog component - Keep only the modal itself without children prop which triggers the redundant button */}
       <AgentModal 
         mode="create" 
         dialogControl={addDialogControl}
         onSubmit={handleAddAgent}
-      >
-        {null}
-      </AgentModal>
+      />
       
       <Toaster />
     </>

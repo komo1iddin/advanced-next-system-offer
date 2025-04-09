@@ -7,17 +7,14 @@ import { getServerSession } from 'next-auth/next';
 // GET a specific tag by ID
 export async function GET(
   req: NextRequest,
-  context: { params: { id: string } }
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { params } = context;
-    console.log(`GET /api/tags/${params.id} - Request received`);
+    const id = params.id;
+    console.log(`GET /api/tags/${id} - Request received`);
     
     // Connect to the database
     await connectToDatabase();
-    
-    // Get the ID from params - access through context.params which is already resolved
-    const id = params.id;
     
     // Find the tag by ID
     const tag = await Tag.findById(id);
@@ -42,19 +39,19 @@ export async function GET(
 // UPDATE a specific tag by ID
 export async function PUT(
   req: NextRequest,
-  context: { params: { id: string } }
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { params } = context;
-    console.log(`PUT /api/tags/${params.id} - Request received`);
+    const id = params.id;
+    console.log(`PUT /api/tags/${id} - Request received`);
     
     // Check if user is authenticated
     const session = await getServerSession();
-    console.log(`PUT /api/tags/${params.id} - Session:`, JSON.stringify(session, null, 2));
+    console.log(`PUT /api/tags/${id} - Session:`, JSON.stringify(session, null, 2));
     
     // Verify session exists and has user email
     if (!session?.user?.email) {
-      console.log(`PUT /api/tags/${params.id} - No session or user email`);
+      console.log(`PUT /api/tags/${id} - No session or user email`);
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
@@ -77,9 +74,6 @@ export async function PUT(
     }
     
     console.log('Verified admin rights through database lookup');
-    
-    // Get the ID from params - access through context.params which is already resolved
-    const id = params.id;
     
     // Parse the request body
     const data = await req.json();
@@ -127,19 +121,19 @@ export async function PUT(
 // DELETE a specific tag by ID
 export async function DELETE(
   req: NextRequest,
-  context: { params: { id: string } }
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { params } = context;
-    console.log(`DELETE /api/tags/${params.id} - Request received`);
+    const id = params.id;
+    console.log(`DELETE /api/tags/${id} - Request received`);
     
     // Check if user is authenticated
     const session = await getServerSession();
-    console.log(`DELETE /api/tags/${params.id} - Session:`, JSON.stringify(session, null, 2));
+    console.log(`DELETE /api/tags/${id} - Session:`, JSON.stringify(session, null, 2));
     
     // Verify session exists and has user email
     if (!session?.user?.email) {
-      console.log(`DELETE /api/tags/${params.id} - No session or user email`);
+      console.log(`DELETE /api/tags/${id} - No session or user email`);
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
@@ -162,9 +156,6 @@ export async function DELETE(
     }
     
     console.log('Verified admin rights through database lookup');
-    
-    // Get the ID from params - access through context.params which is already resolved
-    const id = params.id;
     
     // Delete the tag
     const deletedTag = await Tag.findByIdAndDelete(id);
