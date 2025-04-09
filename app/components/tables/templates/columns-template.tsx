@@ -8,7 +8,7 @@ import { SortableHeader } from "../shared/SortableHeader";
 import { TableSelectionCheckbox } from "../shared/TableSelectionCheckbox";
 import { TableStatusToggle } from "../shared/TableStatusToggle";
 import { TableActionButtons } from "../shared/TableActionButtons";
-import { formatDate, formatNullable, formatPrice } from "../shared/FormatUtils";
+import { formatDate, formatNullable, formatPrice } from "@/lib/utils/formatting";
 import { Badge } from "@/components/ui/badge";
 
 // Define your entity type

@@ -6,7 +6,7 @@ import { SortableHeader } from "../shared/SortableHeader";
 import { TableSelectionCheckbox } from "../shared/TableSelectionCheckbox";
 import { TableStatusToggle } from "../shared/TableStatusToggle";
 import { TableActionButtons } from "../shared/TableActionButtons";
-import { formatDate, formatNullable } from "../shared/FormatUtils";
+import { formatDate, formatNullable } from "@/lib/utils/formatting";
 
 // Standardized interface for column props
 export interface AgentColumnsProps {

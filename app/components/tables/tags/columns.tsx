@@ -7,7 +7,7 @@ import { Tag } from "@/app/admin/tags/lib/tag-service";
 import { TableSelectionCheckbox } from "../shared/TableSelectionCheckbox";
 import { TableStatusToggle } from "../shared/TableStatusToggle";
 import { TableActionButtons } from "../shared/TableActionButtons";
-import { formatDate } from "../shared/FormatUtils";
+import { formatDate } from "@/lib/utils/formatting";
 
 // Standardized interface for column props
 export interface TagColumnsProps {
