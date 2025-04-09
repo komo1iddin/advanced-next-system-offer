@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -10,9 +9,10 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Save } from "lucide-react";
+import { Save } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import { Toaster } from "@/components/ui/toaster";
+import { AdminPageLayout } from "@/components/ui/admin/page-layout";
 
 interface GeneralSettings {
   siteName: string;
@@ -190,30 +190,41 @@ export default function SettingsPage() {
     }
   };
 
+  // Save button for settings page
+  const actionButton = (
+    <Button type="submit" form="settings-form" disabled={isSaving} className="w-full sm:w-auto">
+      <Save className="mr-2 h-4 w-4" />
+      {isSaving ? "Saving..." : "Save Settings"}
+    </Button>
+  );
+
+  // Breadcrumbs for this page
+  const breadcrumbs = [
+    { title: "Settings", href: "/admin/settings" }
+  ];
+
   if (isLoading) {
     return (
-      <div className="container mx-auto py-8 px-4">
+      <AdminPageLayout
+        title="Settings"
+        description="Manage your application settings and preferences"
+        breadcrumbs={breadcrumbs}
+      >
         <div className="flex items-center justify-center h-[60vh]">
           <p className="text-muted-foreground">Loading settings...</p>
         </div>
-      </div>
+      </AdminPageLayout>
     );
   }
 
   return (
-    <div className="container mx-auto py-8 px-4">
-      <div className="mb-6">
-        <Link href="/admin" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground w-fit mb-1">
-          <ArrowLeft className="mr-1 h-4 w-4" />
-          Back to Dashboard
-        </Link>
-        <h1 className="text-2xl font-bold">Settings</h1>
-        <p className="text-muted-foreground text-sm">
-          Manage your application settings and preferences
-        </p>
-      </div>
-
-      <form onSubmit={handleSubmit}>
+    <AdminPageLayout
+      title="Settings"
+      description="Manage your application settings and preferences"
+      actionButton={actionButton}
+      breadcrumbs={breadcrumbs}
+    >
+      <form id="settings-form" onSubmit={handleSubmit}>
         <Tabs defaultValue="general" className="space-y-4">
           <TabsList>
             <TabsTrigger value="general">General</TabsTrigger>
@@ -271,7 +282,7 @@ export default function SettingsPage() {
                       type="email"
                       value={generalSettings.contactEmail}
                       onChange={(e) => handleGeneralSettingsChange("contactEmail", e.target.value)}
-                      placeholder="Enter contact email"
+                      placeholder="contact@example.com"
                     />
                   </div>
                   
@@ -282,7 +293,7 @@ export default function SettingsPage() {
                       type="email"
                       value={generalSettings.supportEmail}
                       onChange={(e) => handleGeneralSettingsChange("supportEmail", e.target.value)}
-                      placeholder="Enter support email"
+                      placeholder="support@example.com"
                     />
                   </div>
                 </div>
@@ -293,8 +304,8 @@ export default function SettingsPage() {
                     id="address"
                     value={generalSettings.address}
                     onChange={(e) => handleGeneralSettingsChange("address", e.target.value)}
-                    placeholder="Enter address"
-                    rows={2}
+                    placeholder="Enter physical address"
+                    rows={3}
                   />
                 </div>
 
@@ -313,9 +324,9 @@ export default function SettingsPage() {
           <TabsContent value="social">
             <Card>
               <CardHeader>
-                <CardTitle>Social Media Settings</CardTitle>
+                <CardTitle>Social Media Links</CardTitle>
                 <CardDescription>
-                  Configure your social media links and profiles
+                  Set your social media profiles for sharing and connecting
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -326,7 +337,7 @@ export default function SettingsPage() {
                       id="facebook"
                       value={socialMediaSettings.facebook}
                       onChange={(e) => handleSocialMediaSettingsChange("facebook", e.target.value)}
-                      placeholder="Enter Facebook URL"
+                      placeholder="https://facebook.com/yourpage"
                     />
                   </div>
                   
@@ -336,17 +347,19 @@ export default function SettingsPage() {
                       id="twitter"
                       value={socialMediaSettings.twitter}
                       onChange={(e) => handleSocialMediaSettingsChange("twitter", e.target.value)}
-                      placeholder="Enter Twitter URL"
+                      placeholder="https://twitter.com/yourhandle"
                     />
                   </div>
-                  
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="instagram">Instagram</Label>
                     <Input
                       id="instagram"
                       value={socialMediaSettings.instagram}
                       onChange={(e) => handleSocialMediaSettingsChange("instagram", e.target.value)}
-                      placeholder="Enter Instagram URL"
+                      placeholder="https://instagram.com/yourprofile"
                     />
                   </div>
                   
@@ -356,19 +369,19 @@ export default function SettingsPage() {
                       id="linkedin"
                       value={socialMediaSettings.linkedin}
                       onChange={(e) => handleSocialMediaSettingsChange("linkedin", e.target.value)}
-                      placeholder="Enter LinkedIn URL"
+                      placeholder="https://linkedin.com/company/yourcompany"
                     />
                   </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="youtube">YouTube</Label>
-                    <Input
-                      id="youtube"
-                      value={socialMediaSettings.youtube}
-                      onChange={(e) => handleSocialMediaSettingsChange("youtube", e.target.value)}
-                      placeholder="Enter YouTube URL"
-                    />
-                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="youtube">YouTube</Label>
+                  <Input
+                    id="youtube"
+                    value={socialMediaSettings.youtube}
+                    onChange={(e) => handleSocialMediaSettingsChange("youtube", e.target.value)}
+                    placeholder="https://youtube.com/c/yourchannel"
+                  />
                 </div>
               </CardContent>
             </Card>
@@ -379,7 +392,7 @@ export default function SettingsPage() {
               <CardHeader>
                 <CardTitle>SEO Settings</CardTitle>
                 <CardDescription>
-                  Configure your search engine optimization settings
+                  Optimize your site for search engines
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -392,7 +405,7 @@ export default function SettingsPage() {
                     placeholder="Enter meta title"
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="metaDescription">Meta Description</Label>
                   <Textarea
@@ -403,46 +416,33 @@ export default function SettingsPage() {
                     rows={3}
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="keywords">Keywords</Label>
                   <Textarea
                     id="keywords"
                     value={seoSettings.keywords}
                     onChange={(e) => handleSEOSettingsChange("keywords", e.target.value)}
-                    placeholder="Enter keywords (comma-separated)"
-                    rows={2}
+                    placeholder="Enter keywords separated by commas"
+                    rows={3}
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="googleAnalyticsId">Google Analytics ID</Label>
                   <Input
                     id="googleAnalyticsId"
                     value={seoSettings.googleAnalyticsId}
                     onChange={(e) => handleSEOSettingsChange("googleAnalyticsId", e.target.value)}
-                    placeholder="Enter Google Analytics ID"
+                    placeholder="e.g. UA-XXXXXXXXX-X or G-XXXXXXXXXX"
                   />
                 </div>
               </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
-
-        <div className="mt-6 flex justify-end">
-          <Button type="submit" disabled={isSaving} className="w-full sm:w-auto">
-            {isSaving ? (
-              <>Saving...</>
-            ) : (
-              <>
-                <Save className="w-4 h-4 mr-2" />
-                Save Settings
-              </>
-            )}
-          </Button>
-        </div>
       </form>
       <Toaster />
-    </div>
+    </AdminPageLayout>
   );
 } 
