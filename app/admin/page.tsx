@@ -9,7 +9,7 @@ export default function AdminDashboardPage() {
   const { data: session } = useSession();
   
   return (
-    <div className="container mx-auto py-10 px-6">
+    <div className="container max-w-7xl mx-auto p-6 space-y-6">
       <div className="flex flex-col gap-6">
         <div className="flex flex-col gap-2">
           <h1 className="text-3xl font-bold flex items-center gap-2">
