@@ -13,7 +13,7 @@ const ReactQueryDevtools = dynamic(
   { ssr: false }
 );
 
-export default function Providers({ children }: { children: React.ReactNode }) {
+export function ReactQueryProvider({ children }: { children: React.ReactNode }) {
   // Use our enhanced QueryClient factory
   const [queryClient] = useState(() => createQueryClient());
 
