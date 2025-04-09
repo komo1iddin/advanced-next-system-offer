@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -9,10 +10,9 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Save } from "lucide-react";
+import { Save, ArrowLeft, ChevronRight } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import { Toaster } from "@/components/ui/toaster";
-import { AdminPageLayout } from "@/components/ui/admin/page-layout";
 
 interface GeneralSettings {
   siteName: string;
@@ -190,40 +190,61 @@ export default function SettingsPage() {
     }
   };
 
-  // Save button for settings page
-  const actionButton = (
-    <Button type="submit" form="settings-form" disabled={isSaving} className="w-full sm:w-auto">
-      <Save className="mr-2 h-4 w-4" />
-      {isSaving ? "Saving..." : "Save Settings"}
-    </Button>
+  // Breadcrumbs component
+  const Breadcrumbs = () => (
+    <nav className="flex items-center space-x-1 text-sm text-muted-foreground mb-2">
+      <Link href="/admin" className="hover:text-foreground">
+        Dashboard
+      </Link>
+      <ChevronRight className="h-4 w-4 mx-1 text-muted-foreground/50" />
+      <span className="font-medium text-foreground">Settings</span>
+    </nav>
   );
-
-  // Breadcrumbs for this page
-  const breadcrumbs = [
-    { title: "Settings", href: "/admin/settings" }
-  ];
 
   if (isLoading) {
     return (
-      <AdminPageLayout
-        title="Settings"
-        description="Manage your application settings and preferences"
-        breadcrumbs={breadcrumbs}
-      >
+      <div className="container max-w-7xl mx-auto p-6 space-y-6">
+        <div className="mb-6">
+          <Link href="/admin" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground w-fit mb-1">
+            <ArrowLeft className="mr-1 h-4 w-4" />
+            Back to Dashboard
+          </Link>
+          <h1 className="text-2xl font-bold">Settings</h1>
+          <p className="text-muted-foreground">
+            Manage your application settings and preferences
+          </p>
+        </div>
+        
         <div className="flex items-center justify-center h-[60vh]">
           <p className="text-muted-foreground">Loading settings...</p>
         </div>
-      </AdminPageLayout>
+      </div>
     );
   }
 
   return (
-    <AdminPageLayout
-      title="Settings"
-      description="Manage your application settings and preferences"
-      actionButton={actionButton}
-      breadcrumbs={breadcrumbs}
-    >
+    <div className="container max-w-7xl mx-auto p-6 space-y-6">
+      <div className="mb-6 flex flex-col space-y-4">
+        <div>
+          <Breadcrumbs />
+        </div>
+        
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
+          <div className="flex flex-col space-y-1">
+            <h1 className="text-2xl font-bold">Settings</h1>
+            <p className="text-muted-foreground text-sm">
+              Manage your application settings and preferences
+            </p>
+          </div>
+          <div className="sm:ml-auto">
+            <Button type="submit" form="settings-form" disabled={isSaving} className="w-full sm:w-auto">
+              <Save className="mr-2 h-4 w-4" />
+              {isSaving ? "Saving..." : "Save Settings"}
+            </Button>
+          </div>
+        </div>
+      </div>
+
       <form id="settings-form" onSubmit={handleSubmit}>
         <Tabs defaultValue="general" className="space-y-4">
           <TabsList>
@@ -443,6 +464,6 @@ export default function SettingsPage() {
         </Tabs>
       </form>
       <Toaster />
-    </AdminPageLayout>
+    </div>
   );
 } 
