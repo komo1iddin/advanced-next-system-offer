@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useQuery, useQueryClient, UseQueryOptions } from '@tanstack/react-query';
-import { useDebounce } from './useDebounce';
+import { useDebounce } from '@/hooks/use-debounce';
 import { QueryFilters } from '@/lib/react-query/types';
 
 interface UseFilteredQueryOptions<TData> {
@@ -248,37 +248,39 @@ export function useFilteredQuery<TData>({
   }, [fullFilters, queryFn]);
   
   // Execute the query with React Query
-  const { data, isLoading, isError, error, refetch } = useQuery({
-    // Use a structured queryKey that includes all filter parameters
+  const queryResult = useQuery({
     queryKey: [queryKey, fullFilters],
     queryFn: deduplicatedQueryFn,
-    staleTime: 60 * 1000, // 1 minute
-    placeholderData: keepPreviousDataValue => keepPreviousDataValue, // Equivalent to keepPreviousData: true in v4
     ...queryOptions,
   });
   
-  // Calculate pagination values
-  const total = data?.total || 0;
-  const totalPages = Math.ceil(total / limit);
+  // Extract data and metadata from the query result
+  const { data, isLoading, isError, error, refetch } = queryResult;
+  const result = data || { data: [], total: 0 };
+  
+  // Calculate derived pagination values
+  const totalPages = Math.ceil(result.total / limit);
   const hasNextPage = page < totalPages;
   const hasPrevPage = page > 1;
   
-  // Filter change handlers
+  // Handler functions for updating filters
   const setFilter = useCallback((key: string, value: any) => {
     setFiltersState(prev => ({ ...prev, [key]: value }));
-    // Reset to first page when filters change
+    // Reset to page 1 when changing filters
     setPageState(1);
   }, []);
   
   const setFilters = useCallback((newFilters: QueryFilters) => {
     setFiltersState(prev => ({ ...prev, ...newFilters }));
-    // Reset to first page when filters change
+    // Reset to page 1 when changing filters
     setPageState(1);
   }, []);
   
   const setSearch = useCallback((search: string) => {
-    setFilter('search', search);
-  }, [setFilter]);
+    setFiltersState(prev => ({ ...prev, search }));
+    // Reset to page 1 when searching
+    setPageState(1);
+  }, []);
   
   const setPage = useCallback((newPage: number) => {
     setPageState(newPage);
@@ -286,16 +288,21 @@ export function useFilteredQuery<TData>({
   
   const setLimit = useCallback((newLimit: number) => {
     setLimitState(newLimit);
-    // Reset to first page when limit changes
+    // Reset to page 1 when changing page size
     setPageState(1);
   }, []);
   
   const setSort = useCallback((field: string, order?: 'asc' | 'desc') => {
-    // Toggle order if clicking the same field
-    const newOrder = order || (field === sortBy && sortOrder === 'desc' ? 'asc' : 'desc');
     setSortByState(field);
-    setSortOrderState(newOrder);
-  }, [sortBy, sortOrder]);
+    if (order) {
+      setSortOrderState(order);
+    } else {
+      // Toggle order if field is already being sorted
+      setSortOrderState(prev => 
+        sortBy === field ? (prev === 'asc' ? 'desc' : 'asc') : prev
+      );
+    }
+  }, [sortBy]);
   
   const resetFilters = useCallback(() => {
     setFiltersState(defaultFilters);
@@ -303,64 +310,60 @@ export function useFilteredQuery<TData>({
     setLimitState(defaultLimit);
     setSortByState(defaultSortBy);
     setSortOrderState(defaultSortOrder);
-  }, [defaultFilters, defaultLimit, defaultPage, defaultSortBy, defaultSortOrder]);
+  }, [defaultFilters, defaultPage, defaultLimit, defaultSortBy, defaultSortOrder]);
   
-  // Manual refetch that ensures we cancel and restart with latest filters
-  const manualRefetch = useCallback(async () => {
-    // Clear existing queries first
-    await queryClient.invalidateQueries({
-      queryKey: [queryKey],
-      exact: false,
-    });
-    
-    // Refetch with current filters
+  // Manual refetch function with proper typing
+  const refetchData = useCallback(async () => {
     await refetch();
-  }, [queryClient, queryKey, refetch]);
+  }, [refetch]);
   
-  // Create memoized result to prevent unnecessary renders
-  return useMemo(() => ({
-    data: data?.data || [],
-    isLoading,
-    isError,
-    error: isError ? error as Error : null,
-    total,
-    totalPages,
-    hasNextPage,
-    hasPrevPage,
-    page,
-    limit,
-    filters,
-    sortBy,
-    sortOrder,
-    setFilter,
-    setFilters,
-    setSearch,
-    setPage,
-    setLimit,
-    setSort,
-    resetFilters,
-    refetch: manualRefetch,
-  }), [
-    data?.data,
-    isLoading,
-    isError,
-    error,
-    total,
-    totalPages,
-    hasNextPage,
-    hasPrevPage,
-    page,
-    limit,
-    filters,
-    sortBy,
-    sortOrder,
-    setFilter,
-    setFilters,
-    setSearch,
-    setPage,
-    setLimit,
-    setSort,
-    resetFilters,
-    manualRefetch,
-  ]);
+  // Memoize the return value to prevent unnecessary re-renders
+  return useMemo(
+    () => ({
+      data: result.data,
+      isLoading,
+      isError,
+      error: error || null,
+      total: result.total,
+      page,
+      limit,
+      filters,
+      sortBy,
+      sortOrder,
+      setFilter,
+      setFilters,
+      setSearch,
+      setPage,
+      setLimit,
+      setSort,
+      resetFilters,
+      refetch: refetchData,
+      totalPages,
+      hasNextPage,
+      hasPrevPage,
+    }),
+    [
+      result.data,
+      result.total,
+      isLoading,
+      isError,
+      error,
+      page,
+      limit,
+      filters,
+      sortBy,
+      sortOrder,
+      setFilter,
+      setFilters,
+      setSearch,
+      setPage,
+      setLimit,
+      setSort,
+      resetFilters,
+      refetchData,
+      totalPages,
+      hasNextPage,
+      hasPrevPage,
+    ]
+  );
 } 
