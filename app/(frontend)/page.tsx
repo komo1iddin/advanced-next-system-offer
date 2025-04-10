@@ -146,19 +146,60 @@ export default function StudyOffersPage() {
   // Memoize the offers grid/list to prevent unnecessary re-renders
   const renderedOffers = useMemo(() => {
     if (loading) {
-      return Array(8).fill(0).map((_, i) => (
+      // Show different number of skeletons based on viewport size
+      const skeletonCount = isMobile ? 4 : 8;
+      return Array(skeletonCount).fill(0).map((_, i) => (
         <OfferCardSkeleton key={i} viewMode={viewMode} />
       ));
     }
     
-    if (error || offers.length === 0) {
-      return null;
+    if (error) {
+      return (
+        <div className="col-span-full flex flex-col items-center justify-center py-12 text-center">
+          <div className="rounded-full bg-red-100 p-3 text-red-600 mb-4">
+            <Layers className="h-6 w-6" />
+          </div>
+          <h3 className="font-semibold text-lg">Failed to load study offers</h3>
+          <p className="text-muted-foreground mb-4">
+            We encountered an error while loading the data. Please try again later.
+          </p>
+          <Button onClick={() => refetch()} variant="outline">
+            Try Again
+          </Button>
+        </div>
+      );
+    }
+    
+    if (offers.length === 0) {
+      return (
+        <div className="col-span-full flex flex-col items-center justify-center py-12 text-center">
+          <div className="rounded-full bg-gray-100 p-3 text-gray-600 mb-4">
+            <Layers className="h-6 w-6" />
+          </div>
+          <h3 className="font-semibold text-lg">No matching study offers</h3>
+          <p className="text-muted-foreground mb-4">
+            Try adjusting your filters or search criteria
+          </p>
+          <Button 
+            onClick={() => {
+              setSearchQuery("");
+              setSearchInput("");
+              setDegreeLevel(null);
+              setSelectedTags([]);
+              setFeatured(false);
+            }} 
+            variant="outline"
+          >
+            Clear Filters
+          </Button>
+        </div>
+      );
     }
     
     return offers.map((offer) => (
       <OfferCard key={offer._id} offer={offer} viewMode={viewMode} />
     ));
-  }, [offers, loading, error, viewMode]);
+  }, [offers, loading, error, viewMode, isMobile, refetch, setSearchQuery, setDegreeLevel, setFeatured]);
 
   return (
     <div className="container mx-auto py-6 px-4">
@@ -360,70 +401,84 @@ export default function StudyOffersPage() {
           </div>
         )}
 
-        {/* Error state */}
-        {error && !loading && (
-          <div className="text-center p-8">
-            <h3 className="text-lg font-medium text-destructive">Error loading study offers</h3>
-            <p className="text-muted-foreground">{error}</p>
-            <Button onClick={refetch} className="mt-4">
-              Try Again
-            </Button>
-          </div>
-        )}
+        {/* Main Content */}
+        <div className="grid gap-6">
+          {/* Results and View Toggle */}
+          <div className="flex flex-wrap justify-between items-center gap-2">
+            {/* Results count */}
+            <div className="text-sm text-muted-foreground">
+              {loading ? (
+                <span>Loading study offers...</span>
+              ) : error ? (
+                <span>Error loading study offers</span>
+              ) : (
+                <span>Showing <strong>{offers.length}</strong> of <strong>{pagination.total}</strong> study offers</span>
+              )}
+            </div>
 
-        {/* Empty state */}
-        {!loading && !error && offers.length === 0 && (
-          <div className="text-center p-8 border rounded-lg">
-            <School className="h-12 w-12 mx-auto text-muted-foreground" />
-            <h3 className="text-lg font-medium mt-4">No study offers found</h3>
-            <p className="text-muted-foreground mt-2">
-              Try adjusting your filters or search query
-            </p>
-            <Button onClick={() => {
-              setSearchInput("");
-              setSelectedTags([]);
-              setFeatured(false);
-              setDegreeLevel(null);
-              setPage(1);
-            }} variant="outline" className="mt-4">
-              Reset Filters
-            </Button>
+            {/* View toggle */}
+            <ToggleGroup type="single" value={viewMode} onValueChange={(value) => value && setViewMode(value as "grid" | "list")}>
+              <ToggleGroupItem value="grid" aria-label="Grid view">
+                <LayoutGrid className="h-4 w-4" />
+              </ToggleGroupItem>
+              <ToggleGroupItem value="list" aria-label="List view">
+                <List className="h-4 w-4" />
+              </ToggleGroupItem>
+            </ToggleGroup>
           </div>
-        )}
 
-        {/* Study Offers Grid/List */}
-        <div className={`grid ${
-          viewMode === "grid" 
-            ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-4 auto-rows-fr gap-6" 
-            : "grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 auto-rows-auto gap-4"
-        }`}>
-          {renderedOffers}
+          {/* Offers Grid/List */}
+          <div className={viewMode === "grid" ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" : "flex flex-col gap-4"}>
+            {renderedOffers}
+          </div>
+
+          {/* Pagination */}
+          {!loading && !error && offers.length > 0 && pagination.pages > 1 && (
+            <div className="flex justify-center items-center mt-8 gap-1">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => handlePageChange(page - 1)}
+                disabled={page <= 1}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              
+              {Array.from({ length: pagination.pages }, (_, i) => i + 1)
+                .filter(p => Math.abs(p - page) < 2 || p === 1 || p === pagination.pages)
+                .map((p, i, arr) => {
+                  // Add ellipsis
+                  if (i > 0 && p > arr[i - 1] + 1) {
+                    return (
+                      <span key={`ellipsis-${p}`} className="px-3 py-2 text-sm text-muted-foreground">
+                        ...
+                      </span>
+                    );
+                  }
+                  
+                  return (
+                    <Button
+                      key={p}
+                      variant={p === page ? "default" : "outline"}
+                      size="icon"
+                      onClick={() => handlePageChange(p)}
+                    >
+                      {p}
+                    </Button>
+                  );
+                })}
+              
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => handlePageChange(page + 1)}
+                disabled={page >= pagination.pages}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
         </div>
-
-        {/* Pagination */}
-        {!loading && !error && offers.length > 0 && pagination.pages > 1 && (
-          <div className="flex items-center justify-center gap-2 mt-6">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => handlePageChange(page - 1)}
-              disabled={page === 1}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <span className="text-sm font-medium">
-              Page {page} of {pagination.pages}
-            </span>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => handlePageChange(page + 1)}
-              disabled={page === pagination.pages}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-        )}
       </div>
     </div>
   )

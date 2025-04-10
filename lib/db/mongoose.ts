@@ -1,9 +1,54 @@
 import mongoose from 'mongoose';
 
+// Connection string will be read from environment variables
+const MONGODB_URI = process.env.MONGODB_URI || '';
+
+if (!MONGODB_URI) {
+  throw new Error('Please define the MONGODB_URI environment variable');
+}
+
+/**
+ * Global is used here to maintain a cached connection across hot reloads
+ * in development. This prevents connections growing exponentially
+ * during API Route usage.
+ */
+interface MongooseCache {
+  conn: mongoose.Connection | null;
+  promise: Promise<mongoose.Mongoose> | null;
+  isConnecting: boolean;
+}
+
+// Declare global mongoose cache
+declare global {
+  var mongoose: MongooseCache | undefined;
+}
+
+let cached = global.mongoose || { conn: null, promise: null, isConnecting: false };
+
+if (!global.mongoose) {
+  global.mongoose = { conn: null, promise: null, isConnecting: false };
+  cached = global.mongoose;
+}
+
+// Connection options with optimized settings
+const connectionOptions: mongoose.ConnectOptions = {
+  maxPoolSize: 10,
+  minPoolSize: 5,
+  socketTimeoutMS: 30000,
+  connectTimeoutMS: 10000,
+  serverSelectionTimeoutMS: 10000,
+  heartbeatFrequencyMS: 10000,
+  retryWrites: true,
+  retryReads: true,
+  w: 'majority',
+  family: 4, // Force IPv4
+};
+
+/**
+ * Database manager singleton that handles MongoDB connection
+ */
 class DatabaseManager {
   private static instance: DatabaseManager;
-  private connection: mongoose.Connection | null = null;
-  private isConnected = false;
 
   private constructor() {}
 
@@ -14,73 +59,47 @@ class DatabaseManager {
     return DatabaseManager.instance;
   }
 
+  /**
+   * Connect to MongoDB with the optimized connection
+   * @returns {Promise<void>}
+   */
   async connect(): Promise<void> {
-    if (this.isConnected) return;
-
-    try {
-      const MONGODB_URI = process.env.MONGODB_URI;
-      if (!MONGODB_URI) {
-        throw new Error('MONGODB_URI is not defined');
-      }
-
-      // Configure connection options
-      const options: mongoose.ConnectOptions = {
-        maxPoolSize: 10, // Maximum number of connections in the connection pool
-        minPoolSize: 5,  // Minimum number of connections in the connection pool
-        serverSelectionTimeoutMS: 5000, // Timeout for server selection
-        socketTimeoutMS: 45000, // Timeout for socket operations
-        family: 4, // Use IPv4
-        retryWrites: true, // Enable retryable writes
-        retryReads: true, // Enable retryable reads
-      };
-
-      // Create connection
-      this.connection = await mongoose.createConnection(MONGODB_URI, options);
-
-      // Set up event listeners
-      this.connection.on('connected', () => {
-        this.isConnected = true;
-        console.log('MongoDB connected successfully');
-      });
-
-      this.connection.on('error', (err) => {
-        console.error('MongoDB connection error:', err);
-        this.isConnected = false;
-      });
-
-      this.connection.on('disconnected', () => {
-        console.log('MongoDB disconnected');
-        this.isConnected = false;
-      });
-
-      // Handle process termination
-      process.on('SIGINT', async () => {
-        await this.close();
-        process.exit(0);
-      });
-    } catch (error) {
-      console.error('Failed to connect to MongoDB:', error);
-      throw error;
-    }
+    // Just ensure the connection is established using connectToDatabase
+    await connectToDatabase();
   }
 
+  /**
+   * Close the MongoDB connection
+   * @returns {Promise<void>}
+   */
   async close(): Promise<void> {
-    if (this.connection) {
-      await this.connection.close();
-      this.isConnected = false;
-      this.connection = null;
+    if (cached.conn) {
+      await cached.conn.close();
+      cached.conn = null;
+      cached.promise = null;
+      cached.isConnecting = false;
     }
   }
 
+  /**
+   * Get the current MongoDB connection
+   * @returns {mongoose.Connection}
+   */
   getConnection(): mongoose.Connection {
-    if (!this.connection) {
+    if (!cached.conn) {
       throw new Error('Database connection not established');
     }
-    return this.connection;
+    return cached.conn;
   }
 
+  /**
+   * Execute a callback within a MongoDB transaction
+   * @param callback - Function to execute within the transaction
+   * @returns {Promise<T>}
+   */
   async withTransaction<T>(callback: (session: mongoose.ClientSession) => Promise<T>): Promise<T> {
-    const session = await this.getConnection().startSession();
+    const connection = await connectToDatabase();
+    const session = await connection.startSession();
     try {
       let result: T;
       await session.withTransaction(async () => {
@@ -92,9 +111,100 @@ class DatabaseManager {
     }
   }
 
+  /**
+   * Check if the database connection is established
+   * @returns {boolean}
+   */
   isConnectionEstablished(): boolean {
-    return this.isConnected;
+    return cached.conn !== null && cached.conn.readyState === 1;
   }
 }
 
-export const dbManager = DatabaseManager.getInstance(); 
+/**
+ * Connects to MongoDB database with retry mechanism
+ * @param {number} retries - Number of retry attempts, defaults to 3
+ * @returns {Promise<mongoose.Connection>} - Mongoose connection
+ */
+async function connectToDatabase(retries = 3): Promise<mongoose.Connection> {
+  // If we have a connection already, use it
+  if (cached.conn) {
+    // Ensure all models are registered even when using cached connection
+    require('../models/Province');
+    require('../models/City');
+    require('../models/University');
+    return cached.conn;
+  }
+
+  // If connection is in progress, wait for it
+  if (cached.isConnecting && cached.promise) {
+    try {
+      const mongooseInstance = await cached.promise;
+      return mongooseInstance.connection;
+    } catch (error) {
+      console.error('Error waiting for existing connection:', error);
+      // Reset connection state to allow a retry
+      cached.isConnecting = false;
+      cached.promise = null;
+    }
+  }
+
+  // Start new connection attempt
+  cached.isConnecting = true;
+
+  try {
+    if (!cached.promise) {
+      console.log('Connecting to MongoDB Atlas...');
+      cached.promise = mongoose.connect(MONGODB_URI, connectionOptions);
+    }
+
+    const mongooseInstance = await cached.promise;
+    cached.conn = mongooseInstance.connection;
+    cached.isConnecting = false;
+    
+    // Set up event listeners for connection status
+    if (cached.conn) {
+      cached.conn.on('error', (err) => {
+        console.error('MongoDB connection error:', err);
+      });
+      
+      cached.conn.on('disconnected', () => {
+        console.warn('MongoDB disconnected. Reconnecting...');
+        cached.conn = null;
+        cached.promise = null;
+        cached.isConnecting = false;
+      });
+    }
+    
+    console.log('MongoDB connected successfully');
+    
+    // Pre-load all model schemas to ensure they're registered
+    require('../models/Province');
+    require('../models/City');
+    require('../models/University');
+    
+    if (!cached.conn) {
+      throw new Error('Failed to establish MongoDB connection');
+    }
+    
+    return cached.conn;
+  } catch (error) {
+    cached.isConnecting = false;
+    cached.promise = null;
+    
+    console.error(`MongoDB connection error (Attempt ${4 - retries}/3):`, error);
+    
+    // Retry logic with exponential backoff
+    if (retries > 0) {
+      const backoffTime = Math.pow(2, 4 - retries) * 1000; // Exponential backoff
+      console.log(`Retrying connection in ${backoffTime}ms...`);
+      
+      await new Promise(resolve => setTimeout(resolve, backoffTime));
+      return connectToDatabase(retries - 1);
+    }
+    
+    throw new Error('Failed to connect to MongoDB after multiple attempts');
+  }
+}
+
+export const dbManager = DatabaseManager.getInstance();
+export default connectToDatabase; 

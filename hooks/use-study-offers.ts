@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { toast } from './use-toast';
 
 interface StudyOffer {
   _id: string;
@@ -51,9 +52,14 @@ interface UseStudyOffersOptions {
   initialPage?: number;
 }
 
+// Constants for retry logic
+const MAX_RETRIES = 3;
+const RETRY_DELAY = 1500; // 1.5 seconds between retries
+
 export function useStudyOffers(options: UseStudyOffersOptions = {}) {
   const [offers, setOffers] = useState<StudyOffer[]>([]);
   const [loading, setLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true); // Separate loading state for initial load
   const [error, setError] = useState<string | null>(null);
   const [pagination, setPagination] = useState<PaginationInfo>({
     total: 0,
@@ -86,9 +92,18 @@ export function useStudyOffers(options: UseStudyOffersOptions = {}) {
   const [limit, setLimit] = useState<number>(
     options.initialLimit || parseInt(searchParams.get('limit') || '8')
   );
+  
+  // Retry counter for API failures
+  const [retryCount, setRetryCount] = useState(0);
 
-  const fetchOffers = async () => {
-    setLoading(true);
+  // Function to add delay
+  const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+  const fetchOffers = useCallback(async (isRetry = false) => {
+    // Only show loading state for initial load or when not retrying
+    if (!isRetry) {
+      setLoading(true);
+    }
     setError(null);
     
     try {
@@ -105,26 +120,79 @@ export function useStudyOffers(options: UseStudyOffersOptions = {}) {
       
       url += params.toString();
       
-      // Fetch the data
-      const response = await fetch(url);
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch study offers');
+      // Add a cache-busting parameter for retries
+      if (isRetry) {
+        url += `&_retry=${Date.now()}`;
       }
       
-      const { data, pagination: paginationData } = await response.json();
+      // Fetch the data with timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
       
-      setOffers(data);
-      setPagination(paginationData);
+      const response = await fetch(url, {
+        signal: controller.signal,
+        headers: {
+          'Cache-Control': 'no-cache'
+        }
+      });
+      
+      clearTimeout(timeoutId);
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to fetch study offers');
+      }
+      
+      const responseData = await response.json();
+      
+      if (!responseData.success) {
+        throw new Error(responseData.error || 'Failed to fetch study offers');
+      }
+      
+      const { data, pagination: paginationData } = responseData;
+      
+      setOffers(data || []);
+      setPagination(paginationData || { total: 0, page, limit, pages: 0 });
+      setRetryCount(0); // Reset retry count on success
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      console.error('Error fetching offers:', err);
+      
+      const errorMessage = err instanceof Error 
+        ? err.message 
+        : 'An unexpected error occurred';
+        
+      // Check if we need to retry
+      if (retryCount < MAX_RETRIES) {
+        setRetryCount(prev => prev + 1);
+        const retryDelay = RETRY_DELAY * Math.pow(2, retryCount);
+        
+        console.log(`Retrying in ${retryDelay}ms (Attempt ${retryCount + 1}/${MAX_RETRIES})`);
+        
+        // Wait before retrying
+        await delay(retryDelay);
+        
+        // Don't show error toast for retries
+        fetchOffers(true);
+        return;
+      }
+      
+      // Only show error after all retries are exhausted
+      setError(errorMessage);
+      
+      // Show error toast
+      toast({
+        title: "Error loading data",
+        description: "Could not load study offers. Please try again later.",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
+      setInitialLoading(false);
     }
-  };
+  }, [category, degreeLevel, searchQuery, featured, page, limit, retryCount]);
   
   // Update URL with current filters
-  const updateUrlParams = () => {
+  const updateUrlParams = useCallback(() => {
     const params = new URLSearchParams();
     
     if (category) params.append('category', category);
@@ -134,17 +202,18 @@ export function useStudyOffers(options: UseStudyOffersOptions = {}) {
     params.append('page', page.toString());
     
     router.push(`/?${params.toString()}`);
-  };
+  }, [category, degreeLevel, searchQuery, featured, page, router]);
   
   // Fetch offers when filters change
   useEffect(() => {
     fetchOffers();
     updateUrlParams();
-  }, [category, degreeLevel, searchQuery, featured, page, limit]);
+  }, [category, degreeLevel, searchQuery, featured, page, limit, fetchOffers, updateUrlParams]);
   
   return {
     offers,
     loading,
+    initialLoading,
     error,
     pagination,
     category,
@@ -159,6 +228,6 @@ export function useStudyOffers(options: UseStudyOffersOptions = {}) {
     setPage,
     limit,
     setLimit,
-    refetch: fetchOffers
+    refetch: () => fetchOffers()
   };
 } 

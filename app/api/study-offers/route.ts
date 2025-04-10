@@ -7,6 +7,13 @@ import { createStudyOfferSchema, studyOfferSchema } from '@/lib/validations/stud
 import { studyOfferQuerySchema } from '@/lib/validations/query-schema';
 import { requireAuth } from '@/lib/middleware/auth';
 import { rateLimit } from '@/lib/middleware/rateLimit';
+import connectToDatabase from '@/lib/mongodb';
+
+interface StudyOfferResult {
+  data: any[];
+  total: number;
+  timestamp?: string;
+}
 
 // GET all study offers
 export async function GET(request: NextRequest) {
@@ -17,13 +24,35 @@ export async function GET(request: NextRequest) {
     // Validate query parameters
     const query = await ValidateRequest.validateQuery(studyOfferQuerySchema, request);
 
+    // Ensure database connection is established before proceeding
+    await connectToDatabase();
+
     // Get study offers with pagination
-    const result = await StudyOfferService.getStudyOffers(query);
-    const { data = [], total = 0 } = result || {};
+    const result = await StudyOfferService.getStudyOffers(query) as StudyOfferResult;
+    
+    if (!result) {
+      return ResponseFormatter.success([], 'No data found');
+    }
+    
+    const { data = [], total = 0 } = result;
 
     // Return paginated response
     return ResponseFormatter.paginated(data, total, query.page, query.limit);
   } catch (error) {
+    console.error('Error in GET /api/study-offers:', error);
+    
+    // Handle timeout errors specifically
+    if (error instanceof Error && error.message.includes('timeout')) {
+      return NextResponse.json(
+        { 
+          error: "Database operation timed out. Please try again later.",
+          status: 504,
+          success: false 
+        }, 
+        { status: 504 }
+      );
+    }
+    
     return ErrorHandler.handle(error);
   }
 }
@@ -39,7 +68,10 @@ export async function POST(request: NextRequest) {
 
     // Check authentication
     const user = await requireAuth(request);
-    console.log('User authenticated:', user?.email || 'unknown email');
+    console.log('User authenticated');
+
+    // Ensure database connection is established before proceeding
+    await connectToDatabase();
 
     // Try to parse request body without validation first for debugging
     let rawBody;
@@ -65,6 +97,19 @@ export async function POST(request: NextRequest) {
     return ResponseFormatter.created(studyOffer);
   } catch (error) {
     console.error('Error in POST /api/study-offers:', error);
+    
+    // Handle timeout errors specifically
+    if (error instanceof Error && error.message.includes('timeout')) {
+      return NextResponse.json(
+        { 
+          error: "Database operation timed out. Please try again later.",
+          status: 504,
+          success: false 
+        }, 
+        { status: 504 }
+      );
+    }
+    
     return ErrorHandler.handle(error);
   }
 } 

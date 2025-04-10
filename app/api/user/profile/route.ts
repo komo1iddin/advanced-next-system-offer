@@ -4,6 +4,29 @@ import connectToDatabase from "@/lib/mongodb";
 import User from "@/lib/models/User";
 import { ErrorHandler } from "@/lib/middleware/errorHandler";
 import mongoose from "mongoose";
+import { cacheService } from "@/lib/services/CacheService";
+
+// Timeout Promise helper
+const withTimeout = <T>(promise: Promise<T>, timeoutMs: number): Promise<T> => {
+  let timeoutId: NodeJS.Timeout;
+  
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => {
+      reject(new Error('Database operation timed out'));
+    }, timeoutMs);
+  });
+  
+  return Promise.race([
+    promise,
+    timeoutPromise
+  ]).finally(() => {
+    clearTimeout(timeoutId);
+  });
+};
+
+const CACHE_PREFIX = 'user_profile:';
+const QUERY_TIMEOUT = 5000; // 5 seconds
+const CACHE_TTL = 300; // 5 minutes
 
 // GET user profile
 export async function GET(request: NextRequest) {
@@ -15,19 +38,42 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     
+    // Try to get from cache first
+    const cacheKey = `${CACHE_PREFIX}${session.user.email}`;
+    const cachedData = await cacheService.get(cacheKey);
+    
+    if (cachedData) {
+      return NextResponse.json({ user: cachedData });
+    }
+    
     // Connect to database
     await connectToDatabase();
     
-    // Find the user
-    const user = await User.findOne({ email: session.user.email }).select('-password');
+    // Find the user with timeout
+    const user = await withTimeout(
+      User.findOne({ email: session.user.email }).select('-password').lean().exec(),
+      QUERY_TIMEOUT
+    );
     
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
     
+    // Cache the user data
+    await cacheService.set(cacheKey, user, CACHE_TTL);
+    
     // Return user data
     return NextResponse.json({ user });
   } catch (error) {
+    console.error('Error fetching user profile:', error);
+    
+    if (error instanceof Error && error.message === 'Database operation timed out') {
+      return NextResponse.json(
+        { error: "Database operation timed out. Please try again later." }, 
+        { status: 504 }
+      );
+    }
+    
     return ErrorHandler.handle(error);
   }
 }
@@ -48,46 +94,47 @@ export async function PUT(request: NextRequest) {
     // Connect to database
     await connectToDatabase();
     
-    // Find the user
-    const user = await User.findOne({ email: session.user.email });
+    // Find the user with timeout
+    const user = await withTimeout(
+      User.findOne({ email: session.user.email }),
+      QUERY_TIMEOUT
+    );
     
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
     
-    // Update only the fields that are provided
-    if (mongoose.connection.db) {
-      // Use direct MongoDB update to bypass Mongoose validation
-      const result = await mongoose.connection.db.collection('users').updateOne(
-        { _id: user._id },
-        { 
-          $set: { 
-            ...(firstName !== undefined && { firstName }),
-            ...(lastName !== undefined && { lastName }),
-            ...(phone !== undefined && { phone }),
-            updatedAt: new Date()
-          } 
-        }
-      );
-      
-      if (result.modifiedCount === 0) {
-        return NextResponse.json({ message: "No changes were made" }, { status: 200 });
-      }
-    } else {
-      throw new Error('Database connection not established');
-    }
+    // Update user model with validation
+    if (firstName !== undefined) user.firstName = firstName;
+    if (lastName !== undefined) user.lastName = lastName;
+    if (phone !== undefined) user.phone = phone;
+    
+    // Save the changes with timeout
+    await withTimeout(user.save(), QUERY_TIMEOUT);
+    
+    // Clear the user cache
+    await cacheService.del(`${CACHE_PREFIX}${session.user.email}`);
     
     // Return success
     return NextResponse.json({ 
       message: "Profile updated successfully",
       user: {
         email: user.email,
-        firstName,
-        lastName,
-        phone
+        firstName: user.firstName,
+        lastName: user.lastName,
+        phone: user.phone
       }
     });
   } catch (error) {
+    console.error('Error updating user profile:', error);
+    
+    if (error instanceof Error && error.message === 'Database operation timed out') {
+      return NextResponse.json(
+        { error: "Database operation timed out. Please try again later." }, 
+        { status: 504 }
+      );
+    }
+    
     return ErrorHandler.handle(error);
   }
 } 
