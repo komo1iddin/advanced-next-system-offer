@@ -214,6 +214,22 @@ export class StudyOfferService {
         query$ = query$.hint('featured_created_idx');
       } else if (filters.location && filters.degreeLevel) {
         query$ = query$.hint('location_degree_idx');
+      } else if (filters.degreeLevel && (filters.minTuition || filters.maxTuition)) {
+        query$ = query$.hint('degree_tuition_idx');
+      } else if (filters.degreeLevel && (filters.minDuration || filters.maxDuration)) {
+        query$ = query$.hint('degree_duration_idx');
+      } else if (filters.location && (filters.minTuition || filters.maxTuition)) {
+        query$ = query$.hint('location_tuition_idx');
+      } else if (filters.scholarshipAvailable && (filters.minTuition || filters.maxTuition)) {
+        query$ = query$.hint('scholarship_tuition_idx');
+      } else if ((filters.minTuition || filters.maxTuition) && sort === 'createdAt') {
+        query$ = query$.hint('tuition_created_idx');
+      } else if ((filters.minDuration || filters.maxDuration) && sort === 'createdAt') {
+        query$ = query$.hint('duration_created_idx');
+      } else if (filters.degreeLevel && filters.scholarshipAvailable && filters.featured) {
+        query$ = query$.hint('multi_criteria_idx');
+      } else if (filters.language && filters.degreeLevel) {
+        query$ = query$.hint('language_degree_idx');
       }
       
       // Use Promise.all for parallel execution of both queries

@@ -277,10 +277,12 @@ const StudyOfferSchema: Schema = new Schema(
 );
 
 // Add compound indexes for common query patterns
-StudyOfferSchema.index({ title: 'text', description: 'text', universityName: 'text' }, { 
+StudyOfferSchema.index({ title: 'text', description: 'text', universityName: 'text', programs: 'text', location: 'text' }, { 
   weights: { 
     title: 10, 
     universityName: 5, 
+    programs: 3,
+    location: 2,
     description: 1
   },
   name: 'text_search_idx'
@@ -288,7 +290,7 @@ StudyOfferSchema.index({ title: 'text', description: 'text', universityName: 'te
 
 // Optimize for filtering queries
 StudyOfferSchema.index({ degreeLevel: 1, category: 1 }, { name: 'degree_category_idx' });
-StudyOfferSchema.index({ degreeLevel: 1, scholarshipAvailable: 1 }, { name: 'degree_scholarship_idx' });
+StudyOfferSchema.index({ degreeLevel: 1, 'scholarshipAvailable': 1 }, { name: 'degree_scholarship_idx' });
 StudyOfferSchema.index({ applicationDeadline: 1, createdAt: -1 }, { name: 'deadline_created_idx' });
 StudyOfferSchema.index({ featured: 1, createdAt: -1 }, { name: 'featured_created_idx' });
 StudyOfferSchema.index({ 'tuitionFees.amount': 1 }, { name: 'tuition_amount_idx' });
@@ -296,18 +298,41 @@ StudyOfferSchema.index({ durationInYears: 1 }, { name: 'duration_idx' });
 StudyOfferSchema.index({ tags: 1, createdAt: -1 }, { name: 'tags_created_idx' });
 StudyOfferSchema.index({ location: 1, degreeLevel: 1 }, { name: 'location_degree_idx' });
 
+// Add new compound indexes for common filter combinations
+StudyOfferSchema.index({ degreeLevel: 1, 'tuitionFees.amount': 1 }, { name: 'degree_tuition_idx' });
+StudyOfferSchema.index({ degreeLevel: 1, durationInYears: 1 }, { name: 'degree_duration_idx' });
+StudyOfferSchema.index({ location: 1, 'tuitionFees.amount': 1 }, { name: 'location_tuition_idx' });
+StudyOfferSchema.index({ 'scholarshipAvailable': 1, 'tuitionFees.amount': 1 }, { name: 'scholarship_tuition_idx' });
+
+// Add specialized indexes for range queries
+StudyOfferSchema.index({ 'tuitionFees.amount': 1, createdAt: -1 }, { name: 'tuition_created_idx' });
+StudyOfferSchema.index({ durationInYears: 1, createdAt: -1 }, { name: 'duration_created_idx' });
+
+// Add compound index for multi-criteria filtering with sorting
+StudyOfferSchema.index({ 
+  degreeLevel: 1, 
+  'scholarshipAvailable': 1, 
+  featured: 1, 
+  createdAt: -1 
+}, { name: 'multi_criteria_idx' });
+
+// Add index for filter combinations from query-schema
+StudyOfferSchema.index({ 'languageRequirements.language': 1, degreeLevel: 1 }, { name: 'language_degree_idx' });
+
 // Add validation middleware
 StudyOfferSchema.pre('save', function(next) {
   if (this.isModified('applicationDeadline')) {
-    if (this.applicationDeadline < new Date()) {
+    const appDeadline = this.get('applicationDeadline') as Date;
+    if (appDeadline < new Date()) {
       next(new Error('Application deadline cannot be in the past'));
+      return;
     }
   }
   next();
 });
 
-// Add cascade delete middleware
-StudyOfferSchema.pre('remove', async function(next) {
+// Use deleteOne hook instead of deprecated remove hook
+StudyOfferSchema.pre('deleteOne', { document: true }, async function(next) {
   // Add any cascade delete operations here
   next();
 });
