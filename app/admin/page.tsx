@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSession } from "next-auth/react";
-import { Layout, LayoutGrid, PlusCircle, Settings, Shield, Building2, UserPlus, Users, MapPin, Globe, Tag, GraduationCap } from "lucide-react";
+import { Layout, LayoutGrid, PlusCircle, Settings, Shield, Building2, UserPlus, Users, MapPin, Globe, Tag, GraduationCap, Database } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function AdminDashboardPage() {
@@ -154,6 +154,30 @@ export default function AdminDashboardPage() {
                   <span className="font-medium flex items-center gap-2">
                     <Tag className="h-4 w-4" />
                     Manage Tags
+                  </span>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+          
+          {/* Cache Management Card */}
+          <Card className="hover:shadow-md transition-shadow">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-xl flex items-center gap-2">
+                <Database className="h-5 w-5 text-primary" />
+                Cache Management
+              </CardTitle>
+              <CardDescription>Manage Redis cache and performance</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <Link 
+                  href="/admin/cache" 
+                  className="flex items-center justify-between p-3 rounded-md text-sm bg-muted hover:bg-muted/80 transition-colors"
+                >
+                  <span className="font-medium flex items-center gap-2">
+                    <Database className="h-4 w-4" />
+                    Manage Cache
                   </span>
                 </Link>
               </div>
