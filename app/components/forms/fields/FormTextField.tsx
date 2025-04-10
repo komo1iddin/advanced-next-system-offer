@@ -1,9 +1,7 @@
 "use client";
 
-import { forwardRef } from "react";
 import { useFormContext } from "react-hook-form";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { FormField, FormItem, FormLabel, FormMessage } from "@/app/components/forms/FormField";
 
@@ -45,7 +43,7 @@ export default function FormTextField({
     <FormField
       name={name}
       render={({ field }) => (
-        <FormItem className={className}>
+        <FormItem className={cn("col-span-12", className)}>
           <FormLabel>
             {label}{" "}
             {required && <span className="text-red-500">*</span>}
@@ -59,11 +57,16 @@ export default function FormTextField({
             pattern={pattern}
             autoComplete={autoComplete}
             {...field}
+            className={cn(
+              "bg-white w-full min-w-[250px]", // Ensure white background and minimum width
+              type === "password" ? "text-black" : "" // Ensure text is visible in password fields
+            )}
+            style={{ width: '100%' }}
           />
           {description && (
             <p className="text-muted-foreground text-sm">{description}</p>
           )}
-          <FormMessage />
+          <FormMessage name={name} />
         </FormItem>
       )}
     />

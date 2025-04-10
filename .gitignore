@@ -38,3 +38,6 @@ next-env.d.ts
 # cursor editor
 .cursor/
 
+# admin scripts - sensitive content
+scripts/createAdminUser.ts
+

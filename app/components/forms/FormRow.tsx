@@ -13,7 +13,7 @@ interface FormRowProps {
  */
 export function FormRow({ children, className }: FormRowProps) {
   return (
-    <div className={cn("grid grid-cols-12 gap-4 mb-4", className)}>
+    <div className={cn("grid grid-cols-12 gap-4 mb-4 w-full", className)}>
       {children}
     </div>
   );

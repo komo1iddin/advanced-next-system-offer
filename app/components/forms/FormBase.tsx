@@ -91,13 +91,13 @@ export function FormBase<TFieldValues extends FieldValues>({
   return (
     <FormProvider {...form}>
       <form
-        className={cn("space-y-6", className)}
+        className={cn("space-y-6 w-full", className)}
         onSubmit={onSubmit ? form.handleSubmit(handleSubmit) : undefined}
       >
         {children(form)}
         
         {showFooter && (
-          <div className="flex justify-end gap-2 pt-4 border-t">
+          <div className="flex justify-end gap-2 pt-4 border-t w-full">
             {onCancel && (
               <Button 
                 type="button" 
@@ -112,6 +112,7 @@ export function FormBase<TFieldValues extends FieldValues>({
               <Button 
                 type="submit" 
                 disabled={isSubmitting}
+                className="w-full md:w-auto"
               >
                 {isSubmitting ? "Processing..." : submitText}
               </Button>
