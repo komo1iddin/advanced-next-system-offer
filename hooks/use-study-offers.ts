@@ -1,39 +1,40 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from './use-toast';
+import { useDebounce } from './use-debounce';
 
 interface StudyOffer {
   _id: string;
   title: string;
   universityName: string;
-  description: string;
+  description?: string;
   location: string;
   degreeLevel: string;
-  programs: string[];
+  programs?: string[];
   tuitionFees: {
     amount: number;
     currency: string;
-    period: string;
+    period?: string;
   };
   scholarshipAvailable: boolean;
   scholarshipDetails?: string;
   applicationDeadline: Date;
-  languageRequirements: {
+  languageRequirements?: {
     language: string;
     minimumScore?: string;
     testName?: string;
   }[];
-  durationInYears: number;
-  campusFacilities: string[];
-  admissionRequirements: string[];
+  durationInYears?: number;
+  campusFacilities?: string[];
+  admissionRequirements?: string[];
   tags: string[];
   color: string;
   accentColor: string;
   category: string;
   images?: string[];
   featured: boolean;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 interface PaginationInfo {
@@ -50,6 +51,14 @@ interface UseStudyOffersOptions {
   initialFeatured?: boolean;
   initialLimit?: number;
   initialPage?: number;
+  detail?: 'summary' | 'full';
+  // New options
+  minTuition?: number;
+  maxTuition?: number;
+  minDuration?: number;
+  maxDuration?: number;
+  sort?: string;
+  order?: 'asc' | 'desc';
 }
 
 // Constants for retry logic
@@ -85,6 +94,26 @@ export function useStudyOffers(options: UseStudyOffersOptions = {}) {
     options.initialFeatured || searchParams.get('featured') === 'true'
   );
   
+  // New filter states
+  const [minTuition, setMinTuition] = useState<number | undefined>(
+    options.minTuition || (searchParams.get('minTuition') ? Number(searchParams.get('minTuition')) : undefined)
+  );
+  const [maxTuition, setMaxTuition] = useState<number | undefined>(
+    options.maxTuition || (searchParams.get('maxTuition') ? Number(searchParams.get('maxTuition')) : undefined)
+  );
+  const [minDuration, setMinDuration] = useState<number | undefined>(
+    options.minDuration || (searchParams.get('minDuration') ? Number(searchParams.get('minDuration')) : undefined)
+  );
+  const [maxDuration, setMaxDuration] = useState<number | undefined>(
+    options.maxDuration || (searchParams.get('maxDuration') ? Number(searchParams.get('maxDuration')) : undefined)
+  );
+  const [sort, setSort] = useState<string>(
+    options.sort || searchParams.get('sort') || 'createdAt'
+  );
+  const [order, setOrder] = useState<'asc' | 'desc'>(
+    (options.order || searchParams.get('order') || 'desc') as 'asc' | 'desc'
+  );
+  
   // Pagination
   const [page, setPage] = useState<number>(
     options.initialPage || parseInt(searchParams.get('page') || '1')
@@ -93,13 +122,27 @@ export function useStudyOffers(options: UseStudyOffersOptions = {}) {
     options.initialLimit || parseInt(searchParams.get('limit') || '8')
   );
   
+  // Detail level
+  const [detail] = useState<'summary' | 'full'>(
+    options.detail || 'summary'
+  );
+  
+  // Debounce search query to prevent excessive API calls
+  const debouncedSearch = useDebounce(searchQuery, 400);
+  
   // Retry counter for API failures
   const [retryCount, setRetryCount] = useState(0);
+  
+  // Request ID to handle race conditions
+  const currentRequestId = useRef(0);
 
   // Function to add delay
   const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
   const fetchOffers = useCallback(async (isRetry = false) => {
+    // Generate a unique ID for this request
+    const requestId = ++currentRequestId.current;
+    
     // Only show loading state for initial load or when not retrying
     if (!isRetry) {
       setLoading(true);
@@ -108,22 +151,39 @@ export function useStudyOffers(options: UseStudyOffersOptions = {}) {
     
     try {
       // Construct the query URL
-      let url = '/api/study-offers?';
       const params = new URLSearchParams();
       
+      // Add essential parameters
       if (category) params.append('category', category);
       if (degreeLevel) params.append('degreeLevel', degreeLevel);
-      if (searchQuery) params.append('search', searchQuery);
+      if (debouncedSearch) params.append('search', debouncedSearch);
       if (featured) params.append('featured', 'true');
+      
+      // Add optional filters if they exist
+      if (minTuition !== undefined) params.append('minTuition', minTuition.toString());
+      if (maxTuition !== undefined) params.append('maxTuition', maxTuition.toString());
+      if (minDuration !== undefined) params.append('minDuration', minDuration.toString());
+      if (maxDuration !== undefined) params.append('maxDuration', maxDuration.toString());
+      
+      // Sorting
+      params.append('sort', sort);
+      params.append('order', order);
+      
+      // Pagination
       params.append('page', page.toString());
       params.append('limit', limit.toString());
       
-      url += params.toString();
+      // Detail level
+      if (detail === 'full') {
+        params.append('detail', 'full');
+      }
       
       // Add a cache-busting parameter for retries
       if (isRetry) {
-        url += `&_retry=${Date.now()}`;
+        params.append('_retry', Date.now().toString());
       }
+      
+      const url = `/api/study-offers?${params.toString()}`;
       
       // Fetch the data with timeout
       const controller = new AbortController();
@@ -137,6 +197,12 @@ export function useStudyOffers(options: UseStudyOffersOptions = {}) {
       });
       
       clearTimeout(timeoutId);
+      
+      // Check if this request is still the current one
+      if (requestId !== currentRequestId.current) {
+        // A newer request has been made, discard this result
+        return;
+      }
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -154,61 +220,122 @@ export function useStudyOffers(options: UseStudyOffersOptions = {}) {
       setOffers(data || []);
       setPagination(paginationData || { total: 0, page, limit, pages: 0 });
       setRetryCount(0); // Reset retry count on success
-    } catch (err) {
-      console.error('Error fetching offers:', err);
-      
-      const errorMessage = err instanceof Error 
-        ? err.message 
-        : 'An unexpected error occurred';
-        
-      // Check if we need to retry
-      if (retryCount < MAX_RETRIES) {
-        setRetryCount(prev => prev + 1);
-        const retryDelay = RETRY_DELAY * Math.pow(2, retryCount);
-        
-        console.log(`Retrying in ${retryDelay}ms (Attempt ${retryCount + 1}/${MAX_RETRIES})`);
-        
-        // Wait before retrying
-        await delay(retryDelay);
-        
-        // Don't show error toast for retries
-        fetchOffers(true);
+    } catch (error: any) {
+      // If this request is not the current one, ignore the error
+      if (requestId !== currentRequestId.current) {
         return;
       }
       
-      // Only show error after all retries are exhausted
+      const errorMessage = error.message || 'An error occurred while fetching offers';
       setError(errorMessage);
       
-      // Show error toast
-      toast({
-        title: "Error loading data",
-        description: "Could not load study offers. Please try again later.",
-        variant: "destructive",
-      });
+      // Handle timeout errors
+      if (errorMessage.includes('timeout') || errorMessage.includes('aborted')) {
+        if (retryCount < MAX_RETRIES) {
+          // Exponential backoff with jitter
+          const backoff = RETRY_DELAY * Math.pow(2, retryCount) + Math.random() * 1000;
+          setRetryCount(prev => prev + 1);
+          
+          // Retry after delay
+          await delay(backoff);
+          fetchOffers(true);
+          return;
+        }
+        
+        toast({
+          title: 'Connection issue',
+          description: 'The server is taking too long to respond. Please try again later.',
+          variant: 'destructive'
+        });
+      } else {
+        toast({
+          title: 'Error',
+          description: errorMessage,
+          variant: 'destructive'
+        });
+      }
     } finally {
-      setLoading(false);
-      setInitialLoading(false);
+      // If this is still the current request, update loading state
+      if (requestId === currentRequestId.current) {
+        setLoading(false);
+        setInitialLoading(false);
+      }
     }
-  }, [category, degreeLevel, searchQuery, featured, page, limit, retryCount]);
+  }, [
+    category,
+    degreeLevel,
+    debouncedSearch, // Use debounced search value
+    featured,
+    page,
+    limit,
+    detail,
+    retryCount,
+    minTuition,
+    maxTuition, 
+    minDuration,
+    maxDuration,
+    sort,
+    order
+  ]);
   
   // Update URL with current filters
-  const updateUrlParams = useCallback(() => {
+  useEffect(() => {
     const params = new URLSearchParams();
     
-    if (category) params.append('category', category);
-    if (degreeLevel) params.append('degreeLevel', degreeLevel);
-    if (searchQuery) params.append('search', searchQuery);
-    if (featured) params.append('featured', 'true');
-    params.append('page', page.toString());
+    if (category) params.set('category', category);
+    if (degreeLevel) params.set('degreeLevel', degreeLevel);
+    if (searchQuery) params.set('search', searchQuery);
+    if (featured) params.set('featured', 'true');
+    if (page > 1) params.set('page', page.toString());
+    if (limit !== 8) params.set('limit', limit.toString());
     
-    router.push(`/?${params.toString()}`);
-  }, [category, degreeLevel, searchQuery, featured, page, router]);
+    // Add optional filters
+    if (minTuition !== undefined) params.set('minTuition', minTuition.toString());
+    if (maxTuition !== undefined) params.set('maxTuition', maxTuition.toString());
+    if (minDuration !== undefined) params.set('minDuration', minDuration.toString());
+    if (maxDuration !== undefined) params.set('maxDuration', maxDuration.toString());
+    if (sort !== 'createdAt') params.set('sort', sort);
+    if (order !== 'desc') params.set('order', order);
+    
+    const search = params.toString();
+    const query = search ? `?${search}` : '';
+    
+    router.replace(`${window.location.pathname}${query}`, { scroll: false });
+  }, [
+    router,
+    category,
+    degreeLevel,
+    searchQuery,
+    featured,
+    page,
+    limit,
+    minTuition,
+    maxTuition,
+    minDuration,
+    maxDuration,
+    sort,
+    order
+  ]);
   
-  // Fetch offers when filters change
+  // Fetch offers when filters or pagination changes
   useEffect(() => {
     fetchOffers();
-    updateUrlParams();
-  }, [category, degreeLevel, searchQuery, featured, page, limit, fetchOffers, updateUrlParams]);
+  }, [
+    category,
+    degreeLevel,
+    debouncedSearch, // Use debounced search value to trigger fetch
+    featured,
+    page,
+    limit,
+    detail,
+    minTuition,
+    maxTuition,
+    minDuration,
+    maxDuration,
+    sort,
+    order,
+    fetchOffers
+  ]);
   
   return {
     offers,
@@ -228,6 +355,19 @@ export function useStudyOffers(options: UseStudyOffersOptions = {}) {
     setPage,
     limit,
     setLimit,
+    // New filter getters/setters
+    minTuition,
+    setMinTuition,
+    maxTuition,
+    setMaxTuition,
+    minDuration,
+    setMinDuration,
+    maxDuration,
+    setMaxDuration,
+    sort,
+    setSort,
+    order,
+    setOrder,
     refetch: () => fetchOffers()
   };
 } 

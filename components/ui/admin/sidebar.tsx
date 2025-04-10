@@ -13,6 +13,7 @@ import {
   X,
   GraduationCap,
   Settings,
+  Database
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -65,6 +66,11 @@ export function AdminSidebar() {
       title: "Settings",
       href: "/admin/settings",
       icon: <Settings className="h-5 w-5" />,
+    },
+    {
+      title: "Cache Management",
+      href: "/admin/cache",
+      icon: <Database className="h-5 w-5" />,
     },
     {
       title: "Main Site",

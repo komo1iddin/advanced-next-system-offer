@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "dev:fix": "node ./start-dev.js",
+    "dev:redis": "node ./scripts/dev-with-redis.js",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
@@ -57,6 +58,7 @@
     "dotenv": "^16.4.7",
     "embla-carousel-react": "8.5.1",
     "input-otp": "1.4.1",
+    "ioredis": "^5.6.0",
     "lucide-react": "^0.454.0",
     "mongodb": "^6.15.0",
     "mongoose": "^8.2.3",

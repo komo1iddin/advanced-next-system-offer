@@ -33,28 +33,54 @@ export async function GET(request: NextRequest) {
     await connectToDatabase();
 
     // Get study offers with pagination
-    const result = await StudyOfferService.getStudyOffers(query) as StudyOfferResult;
-    
-    if (!result) {
-      return ResponseFormatter.success([], 'No data found');
-    }
-    
-    const { data = [], total = 0 } = result;
+    console.log(`Fetching study offers with query:`, JSON.stringify(query));
+    const startTime = Date.now();
 
-    // Return paginated response
-    return ResponseFormatter.paginated(data, total, query.page, query.limit);
+    try {
+      const result = await StudyOfferService.getStudyOffers(query) as StudyOfferResult;
+      
+      const duration = Date.now() - startTime;
+      console.log(`Query completed in ${duration}ms`);
+      
+      if (!result) {
+        return ResponseFormatter.success([], 'No data found');
+      }
+      
+      const { data = [], total = 0 } = result;
+
+      // Return paginated response
+      return ResponseFormatter.paginated(data, total, query.page, query.limit);
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      console.error(`Query failed after ${duration}ms:`, error);
+      
+      // Handle timeout errors specifically
+      if (error instanceof Error && error.message.includes('timeout')) {
+        return NextResponse.json(
+          { 
+            error: "Database operation timed out. Please try again later or refine your search criteria.",
+            status: 504,
+            success: false,
+            reason: "The query might be too complex or the database is under heavy load."
+          }, 
+          { status: 504 }
+        );
+      }
+      
+      throw error; // re-throw to be caught by outer catch
+    }
   } catch (error) {
     console.error('Error in GET /api/study-offers:', error);
     
-    // Handle timeout errors specifically
-    if (error instanceof Error && error.message.includes('timeout')) {
+    // Handle validation errors
+    if (error instanceof Error && error.message.includes('validation')) {
       return NextResponse.json(
         { 
-          error: "Database operation timed out. Please try again later.",
-          status: 504,
+          error: "Invalid query parameters",
+          status: 400,
           success: false 
         }, 
-        { status: 504 }
+        { status: 400 }
       );
     }
     

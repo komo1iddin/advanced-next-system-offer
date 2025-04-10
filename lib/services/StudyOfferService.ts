@@ -108,18 +108,121 @@ export class StudyOfferService {
       await connectToDatabase();
 
       // If not in cache, fetch from database
-      const { page = 1, limit = 10, ...filters } = query;
+      const { page = 1, limit = 10, search, sort = 'createdAt', order = 'desc', ...filters } = query;
       
       // Calculate skip value for pagination
       const skip = (page - 1) * limit;
       
-      // Use lean queries with explicit fields and index hints for better performance
+      // Build filter object for MongoDB
+      const filterObject: any = {};
+      
+      // Process text search query
+      let searchStage = null;
+      if (search) {
+        searchStage = { $text: { $search: search } };
+        // Add to filter object only if no other stages are used
+        if (Object.keys(filters).length === 0) {
+          Object.assign(filterObject, searchStage);
+        }
+      }
+      
+      // Process other filters
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          // Handle range filters
+          if (key === 'minTuition') {
+            filterObject['tuitionFees.amount'] = { ...(filterObject['tuitionFees.amount'] || {}), $gte: Number(value) };
+          } else if (key === 'maxTuition') {
+            filterObject['tuitionFees.amount'] = { ...(filterObject['tuitionFees.amount'] || {}), $lte: Number(value) };
+          } else if (key === 'minDuration') {
+            filterObject['durationInYears'] = { ...(filterObject['durationInYears'] || {}), $gte: Number(value) };
+          } else if (key === 'maxDuration') {
+            filterObject['durationInYears'] = { ...(filterObject['durationInYears'] || {}), $lte: Number(value) };
+          } else if (key === 'scholarshipAvailable' || key === 'featured') {
+            // Boolean filters
+            filterObject[key] = value === 'true' || value === true;
+          } else {
+            // Regular filters
+            filterObject[key] = value;
+          }
+        }
+      });
+      
+      // Determine which fields to select based on the context
+      // List views need less data than detail views
+      const projection = {
+        _id: 1,
+        uniqueId: 1,
+        title: 1,
+        universityName: 1,
+        degreeLevel: 1,
+        location: 1,
+        'tuitionFees.amount': 1,
+        'tuitionFees.currency': 1,
+        scholarshipAvailable: 1,
+        applicationDeadline: 1,
+        featured: 1,
+        category: 1,
+        color: 1,
+        accentColor: 1,
+        tags: 1
+      };
+      
+      // If detail level data is requested, add additional fields
+      if (query.detail === 'full') {
+        Object.assign(projection, {
+          description: 1,
+          programs: 1,
+          'tuitionFees.period': 1,
+          scholarshipDetails: 1,
+          languageRequirements: 1,
+          durationInYears: 1,
+          campusFacilities: 1,
+          admissionRequirements: 1,
+          images: 1,
+          cityId: 1,
+          provinceId: 1,
+          source: 1,
+          createdAt: 1,
+          updatedAt: 1
+        });
+      }
+      
+      // Determine sort order
+      const sortOption: any = {};
+      
+      // Handle special case for text search relevance sorting
+      if (searchStage && !sort) {
+        sortOption.score = { $meta: 'textScore' };
+        Object.assign(projection, { score: { $meta: 'textScore' } });
+      } else {
+        // Regular sorting
+        sortOption[sort] = order === 'desc' ? -1 : 1;
+      }
+      
+      // Build the query with proper index hints
+      let query$ = StudyOffer.find(filterObject);
+      
+      // Apply index hints based on filter criteria to help MongoDB optimizer
+      if (searchStage) {
+        query$ = query$.hint('text_search_idx');
+      } else if (filters.degreeLevel && filters.category) {
+        query$ = query$.hint('degree_category_idx');
+      } else if (filters.degreeLevel && filters.scholarshipAvailable) {
+        query$ = query$.hint('degree_scholarship_idx');
+      } else if (filters.featured) {
+        query$ = query$.hint('featured_created_idx');
+      } else if (filters.location && filters.degreeLevel) {
+        query$ = query$.hint('location_degree_idx');
+      }
+      
+      // Use Promise.all for parallel execution of both queries
       const queryPromise = Promise.all([
         // Query for data with timeout
         withTimeout(
-          StudyOffer.find(filters)
-            .select('title universityName description location degreeLevel programs tuitionFees scholarshipAvailable applicationDeadline tags color accentColor category featured')
-            .sort({ createdAt: -1 })
+          query$
+            .select(projection)
+            .sort(sortOption)
             .skip(skip)
             .limit(limit)
             .lean()
@@ -128,9 +231,9 @@ export class StudyOfferService {
           'Database query timeout while fetching study offers'
         ),
         
-        // Query for count with timeout
+        // Query for count with timeout - use countDocuments for better performance
         withTimeout(
-          StudyOffer.countDocuments(filters).exec(),
+          StudyOffer.countDocuments(filterObject).exec(),
           this.QUERY_TIMEOUT,
           'Database query timeout while counting study offers'
         )
@@ -186,9 +289,43 @@ export class StudyOfferService {
       // Ensure we're connected to the database
       await connectToDatabase();
 
+      // Determine if we need a lean query (better performance) or full document
+      const projection = {
+        _id: 1,
+        uniqueId: 1,
+        title: 1,
+        universityName: 1,
+        description: 1,
+        location: 1,
+        cityId: 1,
+        provinceId: 1,
+        degreeLevel: 1,
+        programs: 1,
+        tuitionFees: 1,
+        scholarshipAvailable: 1,
+        scholarshipDetails: 1,
+        applicationDeadline: 1,
+        languageRequirements: 1,
+        durationInYears: 1,
+        campusFacilities: 1,
+        admissionRequirements: 1,
+        tags: 1,
+        color: 1,
+        accentColor: 1,
+        category: 1,
+        source: 1,
+        images: 1,
+        featured: 1,
+        createdAt: 1,
+        updatedAt: 1
+      };
+
       // If not in cache, fetch from database with timeout
       const studyOffer = await withTimeout(
-        StudyOffer.findById(id).lean().exec(),
+        StudyOffer.findById(id)
+          .select(projection)
+          .lean()
+          .exec(),
         this.QUERY_TIMEOUT,
         'Database query timeout while fetching study offer'
       );

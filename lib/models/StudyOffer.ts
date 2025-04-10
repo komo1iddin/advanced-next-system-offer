@@ -277,10 +277,24 @@ const StudyOfferSchema: Schema = new Schema(
 );
 
 // Add compound indexes for common query patterns
-StudyOfferSchema.index({ title: 'text', description: 'text', universityName: 'text' });
-StudyOfferSchema.index({ degreeLevel: 1, category: 1 });
-StudyOfferSchema.index({ featured: 1, createdAt: -1 });
-StudyOfferSchema.index({ applicationDeadline: 1, createdAt: -1 });
+StudyOfferSchema.index({ title: 'text', description: 'text', universityName: 'text' }, { 
+  weights: { 
+    title: 10, 
+    universityName: 5, 
+    description: 1
+  },
+  name: 'text_search_idx'
+});
+
+// Optimize for filtering queries
+StudyOfferSchema.index({ degreeLevel: 1, category: 1 }, { name: 'degree_category_idx' });
+StudyOfferSchema.index({ degreeLevel: 1, scholarshipAvailable: 1 }, { name: 'degree_scholarship_idx' });
+StudyOfferSchema.index({ applicationDeadline: 1, createdAt: -1 }, { name: 'deadline_created_idx' });
+StudyOfferSchema.index({ featured: 1, createdAt: -1 }, { name: 'featured_created_idx' });
+StudyOfferSchema.index({ 'tuitionFees.amount': 1 }, { name: 'tuition_amount_idx' });
+StudyOfferSchema.index({ durationInYears: 1 }, { name: 'duration_idx' });
+StudyOfferSchema.index({ tags: 1, createdAt: -1 }, { name: 'tags_created_idx' });
+StudyOfferSchema.index({ location: 1, degreeLevel: 1 }, { name: 'location_degree_idx' });
 
 // Add validation middleware
 StudyOfferSchema.pre('save', function(next) {

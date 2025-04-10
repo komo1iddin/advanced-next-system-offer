@@ -25,15 +25,34 @@ const cacheKeySchema = z.object({
  * Get cache statistics and status
  */
 export async function GET(req: NextRequest) {
+  console.log('[Cache API] Received GET request');
+  
   try {
     // Check authentication and admin role
+    console.log('[Cache API] Attempting to verify admin role');
     await requireAdmin(req);
+    console.log('[Cache API] Admin role verified successfully');
     
     // Get cache statistics - use Redis service directly for stats
-    const stats = await redisCacheService.getStats();
+    console.log('[Cache API] Fetching cache statistics');
+    let stats = {};
+    try {
+      stats = await redisCacheService.getStats() || {};
+      console.log('[Cache API] Cache statistics fetched successfully');
+    } catch (statsError) {
+      console.error('[Cache API] Error fetching stats:', statsError);
+      stats = { error: 'Failed to fetch statistics' };
+    }
     
     // Check if Redis is available
-    const isRedisAvailable = await cacheFactory.isRedisAvailable();
+    console.log('[Cache API] Checking Redis availability');
+    let isRedisAvailable = false;
+    try {
+      isRedisAvailable = await cacheFactory.isRedisAvailable();
+      console.log('[Cache API] Redis availability check completed:', isRedisAvailable);
+    } catch (redisError) {
+      console.error('[Cache API] Error checking Redis availability:', redisError);
+    }
     
     // Get current implementation
     const implementation = isRedisAvailable ? "redis" : "memory";
@@ -42,21 +61,37 @@ export async function GET(req: NextRequest) {
     let redisInfo = null;
     if (isRedisAvailable) {
       try {
+        console.log('[Cache API] Fetching Redis info');
         const redis = getRedisClient();
         redisInfo = await redis.info();
+        console.log('[Cache API] Redis info fetched successfully');
       } catch (error) {
-        console.error("Failed to get Redis info:", error);
+        console.error('[Cache API] Failed to get Redis info:', error);
       }
     }
     
     // Get TTL values
-    const ttlValues = {
-      short: cacheService.getTTLValue("short"),
-      medium: cacheService.getTTLValue("medium"),
-      long: cacheService.getTTLValue("long"),
-      day: cacheService.getTTLValue("day"),
+    let ttlValues = {
+      short: 300,
+      medium: 1800,
+      long: 7200,
+      day: 86400,
     };
     
+    try {
+      console.log('[Cache API] Fetching TTL values');
+      ttlValues = {
+        short: cacheService.getTTLValue("short"),
+        medium: cacheService.getTTLValue("medium"),
+        long: cacheService.getTTLValue("long"),
+        day: cacheService.getTTLValue("day"),
+      };
+      console.log('[Cache API] TTL values fetched successfully');
+    } catch (ttlError) {
+      console.error('[Cache API] Error fetching TTL values:', ttlError);
+    }
+    
+    console.log('[Cache API] Returning successful response');
     return NextResponse.json({
       success: true,
       stats,
@@ -66,10 +101,14 @@ export async function GET(req: NextRequest) {
       ttlValues,
     });
   } catch (error) {
-    console.error("Error getting cache stats:", error);
+    console.error('[Cache API] Error in GET handler:', error);
     return NextResponse.json(
-      { error: "Failed to get cache statistics" },
-      { status: 500 }
+      { 
+        success: false,
+        error: error instanceof Error ? error.message : "Failed to get cache statistics",
+        stack: process.env.NODE_ENV === 'development' ? (error instanceof Error ? error.stack : null) : null
+      },
+      { status: error instanceof Error && error.message.includes('Admin access required') ? 403 : 500 }
     );
   }
 }
