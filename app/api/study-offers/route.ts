@@ -15,6 +15,11 @@ interface StudyOfferResult {
   timestamp?: string;
 }
 
+// Warm the cache on server startup for frequently accessed data
+StudyOfferService.warmCache().catch(err => {
+  console.error('Failed to warm study offers cache:', err);
+});
+
 // GET all study offers
 export async function GET(request: NextRequest) {
   try {

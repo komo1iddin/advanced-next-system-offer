@@ -1,9 +1,12 @@
 import connectToDatabase from '../mongodb';
 import StudyOffer from '../models/StudyOffer';
-import { cacheService } from './CacheService';
+import { getCache } from './CacheFactory';
 import { logService } from './LogService';
 import { AppError } from '../utils/AppError';
 import mongoose from 'mongoose';
+
+// Get the cache implementation
+const cacheService = getCache();
 
 // Timeout Promise helper
 const withTimeout = <T>(promise: Promise<T>, timeoutMs: number, errorMsg: string): Promise<T> => {
@@ -24,9 +27,72 @@ const withTimeout = <T>(promise: Promise<T>, timeoutMs: number, errorMsg: string
 };
 
 export class StudyOfferService {
-  private static readonly CACHE_TTL = cacheService.getTTL('long'); // 1 hour
+  private static readonly CACHE_TTL = cacheService.getTTLValue('long'); // 2 hours
   private static readonly CACHE_PREFIX = 'study_offer:';
   private static readonly QUERY_TIMEOUT = 10000; // 10 seconds
+
+  /**
+   * Warm the cache with frequently accessed study offers
+   */
+  static async warmCache(): Promise<void> {
+    try {
+      // Define the key data to prefetch
+      const keysToWarm = [
+        {
+          key: `${this.CACHE_PREFIX}list:{"page":1,"limit":8}`,
+          fetch: async () => {
+            // Connect to database
+            await connectToDatabase();
+            
+            // Default query for homepage
+            const studyOffers = await StudyOffer.find({})
+              .select('title universityName description location degreeLevel programs tuitionFees scholarshipAvailable applicationDeadline tags color accentColor category featured')
+              .sort({ createdAt: -1 })
+              .limit(8)
+              .lean();
+              
+            const total = await StudyOffer.countDocuments({});
+            
+            return {
+              data: studyOffers,
+              total,
+              timestamp: new Date().toISOString()
+            };
+          },
+          ttl: this.CACHE_TTL
+        },
+        {
+          key: `${this.CACHE_PREFIX}list:{"featured":true,"page":1,"limit":4}`,
+          fetch: async () => {
+            // Connect to database
+            await connectToDatabase();
+            
+            // Featured offers query for homepage
+            const studyOffers = await StudyOffer.find({ featured: true })
+              .select('title universityName description location degreeLevel programs tuitionFees scholarshipAvailable applicationDeadline tags color accentColor category featured')
+              .sort({ createdAt: -1 })
+              .limit(4)
+              .lean();
+              
+            const total = await StudyOffer.countDocuments({ featured: true });
+            
+            return {
+              data: studyOffers,
+              total,
+              timestamp: new Date().toISOString()
+            };
+          },
+          ttl: this.CACHE_TTL
+        }
+        // Add more cache keys as needed
+      ];
+      
+      // Warm the cache
+      await cacheService.warmupCache?.(keysToWarm);
+    } catch (error) {
+      logService.error('Error warming study offers cache:', error);
+    }
+  }
 
   static async getStudyOffers(query: any) {
     try {
@@ -84,8 +150,14 @@ export class StudyOfferService {
         timestamp: new Date().toISOString()
       };
 
-      // Cache the results
-      await cacheService.set(cacheKey, result, this.CACHE_TTL);
+      // Cache the results with a longer TTL for frequently accessed pages
+      if (page === 1 && limit <= 10) {
+        // First page queries are accessed more frequently - use longer TTL
+        await cacheService.set(cacheKey, result, this.CACHE_TTL);
+      } else {
+        // Use shorter TTL for other pages
+        await cacheService.set(cacheKey, result, cacheService.getTTLValue('medium'));
+      }
 
       return result;
     } catch (error) {

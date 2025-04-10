@@ -4,7 +4,10 @@ import connectToDatabase from "@/lib/mongodb";
 import User from "@/lib/models/User";
 import { ErrorHandler } from "@/lib/middleware/errorHandler";
 import mongoose from "mongoose";
-import { cacheService } from "@/lib/services/CacheService";
+import { getCache } from "@/lib/services/CacheFactory";
+
+// Get cache implementation
+const cacheService = getCache();
 
 // Timeout Promise helper
 const withTimeout = <T>(promise: Promise<T>, timeoutMs: number): Promise<T> => {
@@ -26,7 +29,7 @@ const withTimeout = <T>(promise: Promise<T>, timeoutMs: number): Promise<T> => {
 
 const CACHE_PREFIX = 'user_profile:';
 const QUERY_TIMEOUT = 5000; // 5 seconds
-const CACHE_TTL = 300; // 5 minutes
+const CACHE_TTL = cacheService.getTTLValue('medium'); // 30 minutes
 
 // GET user profile
 export async function GET(request: NextRequest) {

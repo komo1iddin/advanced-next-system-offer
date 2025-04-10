@@ -1,4 +1,5 @@
 import { AppError } from '@/lib/utils/error';
+import { TTLType } from './CacheFactory';
 
 // Simple in-memory cache for Edge Runtime
 class InMemoryCache {
@@ -122,10 +123,10 @@ class CacheService {
   private static instance: CacheService;
   // Default TTL values for different types of data
   private readonly DEFAULT_TTLs = {
-    short: 60, // 1 minute
-    medium: 300, // 5 minutes
-    long: 3600, // 1 hour
-    day: 86400, // 24 hours
+    short: parseInt(process.env.REDIS_TTL_SHORT || '300', 10),    // 5 min
+    medium: parseInt(process.env.REDIS_TTL_MEDIUM || '1800', 10), // 30 min
+    long: parseInt(process.env.REDIS_TTL_LONG || '7200', 10),     // 2 hours
+    day: parseInt(process.env.REDIS_TTL_DAY || '86400', 10),      // 24 hours
   };
 
   private constructor() {
@@ -229,8 +230,9 @@ class CacheService {
   }
 
   // Get TTL constants
-  getTTL(type: keyof CacheService['DEFAULT_TTLs'] = 'medium'): number {
-    return this.DEFAULT_TTLs[type];
+  getTTLValue(type: TTLType | string = 'medium'): number {
+    const typeKey = type as keyof typeof this.DEFAULT_TTLs;
+    return this.DEFAULT_TTLs[typeKey] || this.DEFAULT_TTLs.medium;
   }
 }
 
